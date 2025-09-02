@@ -1,0 +1,3332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Morena Smoke Shop - Catálogo Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(167, 139, 250, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(167, 139, 250, 0.8); }
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+        
+        .product-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal {
+            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.8);
+        }
+        
+        .admin-panel {
+            background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 100%);
+        }
+        
+        .cart-item {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .success-message {
+            animation: fadeInOut 3s ease-in-out;
+        }
+        
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateY(-20px); }
+            20%, 80% { opacity: 1; transform: translateY(0); }
+        }
+        
+        .star {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .star:hover {
+            color: #fbbf24;
+        }
+        
+        .star.filled {
+            color: #fbbf24;
+        }
+        
+        .rating-display .star {
+            cursor: default;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- Success Message -->
+    <div id="success-message" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 hidden">
+        <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg success-message">
+            <span id="success-text">✅ Operación exitosa</span>
+        </div>
+    </div>
+
+    <!-- Admin Button -->
+    <div class="fixed top-4 right-4 z-50">
+        <button onclick="showAdminLogin()" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            👑 Admin
+        </button>
+    </div>
+
+    <!-- Cart Button -->
+    <div class="fixed top-4 left-4 z-50">
+        <button onclick="toggleCart()" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            🛒 Carrito (<span id="cart-count">0</span>)
+        </button>
+    </div>
+
+    <!-- Header -->
+    <header class="text-white py-6 px-4">
+        <div class="max-w-6xl mx-auto text-center">
+            <div class="floating mb-4">
+                <!-- Logo La Morena -->
+                <div class="mb-6">
+                    <svg width="120" height="120" viewBox="0 0 120 120" class="mx-auto drop-shadow-2xl">
+                        <circle cx="60" cy="60" r="55" fill="url(#logoGradient)" stroke="#ff69b4" stroke-width="3"/>
+                        <path d="M45 35 C45 25, 55 20, 60 20 C65 20, 75 25, 75 35 C75 40, 70 45, 60 45 C50 45, 45 40, 45 35 Z" fill="#fff" opacity="0.9"/>
+                        <path d="M40 30 Q50 25, 60 30 Q70 25, 80 30 Q75 40, 60 35 Q45 40, 40 30 Z" fill="#8b4513" opacity="0.8"/>
+                        <text x="60" y="65" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="serif">LA</text>
+                        <text x="60" y="78" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="serif">MORENA</text>
+                        <path d="M30 85 Q35 80, 40 85 Q45 90, 50 85" stroke="#ff69b4" stroke-width="2" fill="none" opacity="0.7"/>
+                        <path d="M70 85 Q75 80, 80 85 Q85 90, 90 85" stroke="#ff69b4" stroke-width="2" fill="none" opacity="0.7"/>
+                        <text x="25" y="25" fill="#ffd700" font-size="12">✨</text>
+                        <text x="95" y="25" fill="#ffd700" font-size="12">✨</text>
+                        <text x="25" y="95" fill="#ffd700" font-size="10">💫</text>
+                        <text x="95" y="95" fill="#ffd700" font-size="10">💫</text>
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#8b5cf6"/>
+                                <stop offset="50%" style="stop-color:#ec4899"/>
+                                <stop offset="100%" style="stop-color:#f97316"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-bold bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">
+                    LA MORENA
+                </h1>
+                <h2 class="text-2xl md:text-3xl font-semibold text-pink-200 mt-2">SMOKE SHOP</h2>
+            </div>
+            <p class="text-lg text-purple-100 max-w-2xl mx-auto">
+                🌟 Tu destino premium para productos de calidad 🌟
+            </p>
+            <div class="mt-4 text-purple-200">
+                📱 WhatsApp: <span class="font-bold text-pink-300">+57 315 064-6191</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Categories -->
+    <nav class="px-4 mb-8">
+        <div class="max-w-6xl mx-auto">
+            <div id="categories-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+                <!-- Categories will be loaded here dynamically -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Products Container -->
+    <main class="px-4 pb-12">
+        <div class="max-w-6xl mx-auto">
+            <div id="products-container">
+                <!-- Products will be loaded here dynamically -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Customer Registration Modal -->
+    <div id="customer-registration-modal" class="fixed inset-0 modal hidden items-center justify-center z-[10000]">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="text-center mb-6">
+                <div class="text-4xl mb-3">👤</div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Regístrate para Calificar!</h3>
+                <p class="text-sm text-gray-600">Para dejar tu reseña, necesitamos algunos datos básicos. ¡Es rápido y seguro!</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <span class="text-red-500">*</span> Nombre Completo:
+                    </label>
+                    <input type="text" id="customer-name" placeholder="Ej: Juan Pérez García" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                    <p class="text-xs text-gray-500 mt-1">Tu nombre aparecerá en la reseña</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <span class="text-red-500">*</span> Número de Celular:
+                    </label>
+                    <input type="tel" id="customer-phone" placeholder="Ej: 3001234567" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                    <p class="text-xs text-gray-500 mt-1">Para contactarte sobre promociones exclusivas</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <span class="text-red-500">*</span> Correo Electrónico:
+                    </label>
+                    <input type="email" id="customer-email" placeholder="Ej: juan@email.com" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" required>
+                    <p class="text-xs text-gray-500 mt-1">Para enviarte ofertas especiales y novedades</p>
+                </div>
+                
+                <div class="bg-pink-50 border border-pink-200 rounded-lg p-3">
+                    <div class="flex items-start space-x-2">
+                        <input type="checkbox" id="customer-consent" class="mt-1" required>
+                        <label for="customer-consent" class="text-xs text-gray-700">
+                            <span class="text-red-500">*</span> Acepto recibir información sobre productos, promociones y ofertas especiales de La Morena Smoke Shop por WhatsApp y correo electrónico.
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p class="text-xs text-blue-800">
+                        🔒 <strong>Privacidad garantizada:</strong> Tus datos están seguros y solo los usaremos para mejorar tu experiencia y enviarte ofertas exclusivas.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button onclick="registerCustomerAndRate()" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ✅ Registrarme y Calificar
+                </button>
+                <button onclick="closeCustomerRegistration()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ❌ Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Modal -->
+    <div id="rating-modal" class="fixed inset-0 modal hidden items-center justify-center z-[9999]">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">⭐ Calificar Producto</h3>
+                <div class="text-right">
+                    <p class="text-xs text-gray-600" id="customer-info-display"></p>
+                </div>
+            </div>
+            <div class="text-center mb-4">
+                <h4 id="rating-product-name" class="font-semibold text-lg"></h4>
+            </div>
+            <div class="flex justify-center mb-4">
+                <div id="rating-stars" class="flex space-x-1">
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="1">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="2">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="3">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="4">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="5">⭐</span>
+                </div>
+            </div>
+            <div class="text-center mb-4">
+                <p id="rating-feedback" class="text-sm text-gray-600">Haz clic en las estrellas para calificar</p>
+            </div>
+            <textarea id="rating-comment" placeholder="Escribe tu comentario (opcional)" class="w-full p-3 border border-gray-300 rounded-lg mb-4" rows="3"></textarea>
+            <div class="flex gap-3">
+                <button onclick="submitRating()" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-lg font-semibold">
+                    Enviar Calificación
+                </button>
+                <button onclick="closeRatingModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="fixed inset-0 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">🔐 Acceso Administrador</h3>
+            <input type="password" id="admin-password" placeholder="Contraseña" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-pink-500">
+            <div class="flex gap-3">
+                <button onclick="checkAdminPassword()" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-lg font-semibold">
+                    Ingresar
+                </button>
+                <button onclick="hideAdminLogin()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="fixed inset-0 admin-panel hidden z-40 overflow-y-auto">
+        <div class="min-h-screen p-4">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-bold text-white">👑 Panel de Administración</h2>
+                    <button onclick="hideAdminPanel()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
+                        ✕ Cerrar
+                    </button>
+                </div>
+
+                <!-- Logo Management -->
+                <div class="bg-white rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🎨 Gestionar Logo</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">📝 Información del Logo</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Texto Principal:</label>
+                                    <input type="text" id="logo-main-text" placeholder="LA MORENA" class="w-full p-3 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Texto Secundario:</label>
+                                    <input type="text" id="logo-sub-text" placeholder="SMOKE SHOP" class="w-full p-3 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Imagen del Logo:</label>
+                                    <input type="file" id="logo-image" accept="image/*" class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <p class="text-xs text-gray-500 mt-1">Sube una imagen personalizada o deja vacío para usar el logo por defecto</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3 mt-4">
+                                <button onclick="updateLogo()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold">
+                                    ✅ Actualizar Logo
+                                </button>
+                                <button onclick="resetLogo()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold">
+                                    🔄 Restaurar Original
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">👀 Vista Previa</h4>
+                            <div class="bg-gradient-to-br from-purple-600 to-pink-500 rounded-lg p-6 text-center">
+                                <div id="logo-preview" class="text-white">
+                                    <!-- Logo preview will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Management -->
+                <div class="bg-white rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🏷️ Gestionar Categorías</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <input type="text" id="new-category-name" placeholder="Nombre de nueva categoría" class="p-3 border border-gray-300 rounded-lg">
+                        <input type="text" id="new-category-emoji" placeholder="Emoji (ej: 🔥)" class="p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <button onclick="addCategory()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold mb-4">
+                        ➕ Agregar Categoría
+                    </button>
+                    <div id="admin-categories-list" class="space-y-2">
+                        <!-- Categories management will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Add Product Form -->
+                <div class="bg-white rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">➕ Agregar Nuevo Producto</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="product-name" placeholder="Nombre del producto" class="p-3 border border-gray-300 rounded-lg">
+                        <input type="text" id="product-price" placeholder="Precio (ej: 25.99)" class="p-3 border border-gray-300 rounded-lg">
+                        <select id="product-category" class="p-3 border border-gray-300 rounded-lg">
+                            <!-- Categories will be loaded here -->
+                        </select>
+                        <input type="file" id="product-image" accept="image/*" class="p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <textarea id="product-description" placeholder="Descripción del producto" class="w-full p-3 border border-gray-300 rounded-lg mt-4" rows="3"></textarea>
+                    <button onclick="addProduct()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg mt-4 font-semibold">
+                        ✅ Agregar Producto
+                    </button>
+                </div>
+
+                <!-- Products Management -->
+                <div class="bg-white rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">📦 Gestionar Productos</h3>
+                    <div id="admin-products-list">
+                        <!-- Admin products list will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Customer Database Management -->
+                <div class="bg-white rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">👥 Base de Datos de Clientes</h3>
+                    <div class="mb-4 flex flex-wrap gap-4 items-center">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-blue-800">📊 Total de Clientes: <span id="total-customers" class="font-bold">0</span></p>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-green-800">⭐ Clientes Activos: <span id="active-customers" class="font-bold">0</span></p>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-purple-800">🛒 Clientes Compradores: <span id="buyer-customers" class="font-bold">0</span></p>
+                        </div>
+                        <button onclick="exportCustomers()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                            📥 Exportar Datos
+                        </button>
+                    </div>
+                    <div id="admin-customers-list">
+                        <!-- Customers will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Purchase History Management -->
+                <div class="bg-white rounded-2xl p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🛒 Historial de Compras</h3>
+                    <div class="mb-4 flex flex-wrap gap-4 items-center">
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-green-800">💰 Total Ventas: <span id="total-sales" class="font-bold">$0</span></p>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-sm font-semibold text-blue-800">📦 Total Compras: <span id="total-purchases" class="font-bold">0</span></p>
+                        </div>
+                        <button onclick="exportPurchases()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                            📥 Exportar Compras
+                        </button>
+                    </div>
+                    <div id="admin-purchases-list">
+                        <!-- Purchases will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Ratings Management -->
+                <div class="bg-white rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">⭐ Calificaciones y Comentarios</h3>
+                    <div id="admin-ratings-list">
+                        <!-- Ratings will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="fixed inset-0 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">🛒 Tu Carrito</h3>
+                <button onclick="toggleCart()" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div id="cart-items">
+                <!-- Cart items will be loaded here -->
+            </div>
+            <div class="border-t pt-4 mt-4">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">💳 Método de Pago:</label>
+                    <select id="payment-method" class="w-full p-2 border border-gray-300 rounded-lg">
+                        <option value="transferencia">🏦 Transferencia Bancaria</option>
+                        <option value="efectivo">💵 Efectivo (Contraentrega - Solo Cali)</option>
+                        <option value="datafono">💳 Datáfono Bold</option>
+                        <option value="link-pago">🔗 Link de Pago Bold</option>
+                    </select>
+                </div>
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold text-lg">Total: $<span id="cart-total">0.00</span></span>
+                </div>
+                <button onclick="sendWhatsAppOrder()" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold mb-2">
+                    📱 Enviar Pedido por WhatsApp
+                </button>
+                <button onclick="markPurchaseCompleted()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg font-semibold text-sm mb-2">
+                    ✅ Marcar como Compra Realizada
+                </button>
+                <button onclick="openWhatsAppSupport()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-semibold text-sm">
+                    💬 ¿Dudas? Contactar por WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Detail Modal -->
+    <div id="product-detail-modal" class="fixed inset-0 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800">📦 Detalle del Producto</h3>
+                <button onclick="closeProductDetail()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+            </div>
+            <div id="product-detail-content">
+                <!-- Product detail content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-product-modal" class="fixed inset-0 modal hidden items-center justify-center z-[9999]">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">✏️ Editar Producto</h3>
+                <button onclick="closeEditProductModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">📝 Nombre del Producto:</label>
+                    <input type="text" id="edit-product-name" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Nombre del producto">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">💰 Precio:</label>
+                    <input type="text" id="edit-product-price" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Precio (ej: 25.99)">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">🏷️ Categoría:</label>
+                    <select id="edit-product-category" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500">
+                        <!-- Categories will be loaded here -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">📄 Descripción:</label>
+                    <textarea id="edit-product-description" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" rows="3" placeholder="Descripción del producto"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="saveProductChanges()" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ✅ Guardar Cambios
+                </button>
+                <button onclick="closeEditProductModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ❌ Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div id="edit-category-modal" class="fixed inset-0 modal hidden items-center justify-center z-[9999]">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">✏️ Editar Categoría</h3>
+                <button onclick="closeEditCategoryModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">📝 Nombre de la Categoría:</label>
+                    <input type="text" id="edit-category-name" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Nombre de la categoría">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">🎨 Emoji:</label>
+                    <input type="text" id="edit-category-emoji" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Emoji (ej: 🔥, 💨, 👑)">
+                    <div class="mt-2 text-xs text-gray-500">
+                        <p class="font-semibold mb-1">💡 Sugerencias de emojis:</p>
+                        <div class="flex flex-wrap gap-1">
+                            <button onclick="setEmoji('🔥')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">🔥</button>
+                            <button onclick="setEmoji('💨')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">💨</button>
+                            <button onclick="setEmoji('👑')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">👑</button>
+                            <button onclick="setEmoji('💎')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">💎</button>
+                            <button onclick="setEmoji('⚙️')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">⚙️</button>
+                            <button onclick="setEmoji('🌿')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">🌿</button>
+                            <button onclick="setEmoji('🍃')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">🍃</button>
+                            <button onclick="setEmoji('💗')" class="bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-sm">💗</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-sm font-semibold text-gray-700 mb-2">👀 Vista Previa:</p>
+                    <div id="category-preview" class="bg-gradient-to-r from-pink-400 to-purple-500 text-white py-2 px-3 rounded-lg text-center font-semibold">
+                        🏷️ Nombre de Categoría
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="saveCategoryChanges()" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ✅ Guardar Cambios
+                </button>
+                <button onclick="closeEditCategoryModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ❌ Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Dialog Modal -->
+    <div id="confirm-dialog" class="fixed inset-0 modal hidden items-center justify-center z-[10000]">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="text-4xl mb-4">⚠️</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Confirmar Acción</h3>
+                <div id="confirm-message" class="text-gray-700 whitespace-pre-line text-sm leading-relaxed">
+                    <!-- Confirmation message will be loaded here -->
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirm-cancel" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ❌ Cancelar
+                </button>
+                <button id="confirm-accept" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                    ✅ Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Rating Modal -->
+    <div id="edit-rating-modal" class="fixed inset-0 modal hidden items-center justify-center z-[9999]">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">✏️ Editar Mi Calificación</h3>
+                <button onclick="closeEditRatingModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+            </div>
+            <div class="text-center mb-4">
+                <h4 id="edit-rating-product-name" class="font-semibold text-lg"></h4>
+            </div>
+            <div class="flex justify-center mb-4">
+                <div id="edit-rating-stars" class="flex space-x-1">
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="1">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="2">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="3">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="4">⭐</span>
+                    <span class="star text-3xl text-gray-300 cursor-pointer hover:scale-110 transition-all" data-rating="5">⭐</span>
+                </div>
+            </div>
+            <div class="text-center mb-4">
+                <p id="edit-rating-feedback" class="text-sm text-gray-600">Haz clic en las estrellas para calificar</p>
+            </div>
+            <textarea id="edit-rating-comment" placeholder="Escribe tu comentario (opcional)" class="w-full p-3 border border-gray-300 rounded-lg mb-4" rows="3"></textarea>
+            <div class="flex gap-3">
+                <button onclick="saveEditedRating()" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold">
+                    ✅ Guardar Cambios
+                </button>
+                <button onclick="closeEditRatingModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold">
+                    ❌ Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Button -->
+    <div class="fixed bottom-6 right-6">
+        <a href="https://wa.me/573150646191" target="_blank" class="pulse-glow bg-green-500 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform block">
+            <span class="text-2xl">💬</span>
+        </a>
+    </div>
+
+    <script>
+        // Global variables
+        let categories = JSON.parse(localStorage.getItem('lamorena_categories')) || [];
+        let products = JSON.parse(localStorage.getItem('lamorena_products')) || [];
+        let cart = JSON.parse(localStorage.getItem('lamorena_cart')) || [];
+        let ratings = JSON.parse(localStorage.getItem('lamorena_ratings')) || [];
+        let logoSettings = JSON.parse(localStorage.getItem('lamorena_logo')) || {
+            mainText: 'LA MORENA',
+            subText: 'SMOKE SHOP',
+            customImage: null,
+            useCustomImage: false
+        };
+        let customers = JSON.parse(localStorage.getItem('lamorena_customers')) || [];
+        let currentCustomer = JSON.parse(localStorage.getItem('lamorena_current_customer')) || null;
+        let purchases = JSON.parse(localStorage.getItem('lamorena_purchases')) || [];
+        let isAdminMode = false;
+        let currentRatingProductId = null;
+        let currentUserRating = 0;
+        let currentEditingProductId = null;
+        let currentEditingCategoryId = null;
+        let currentEditingRatingId = null;
+        let userRatings = JSON.parse(localStorage.getItem('lamorena_user_ratings')) || [];
+
+        // Format price function
+        function formatPrice(price) {
+            return '$' + price.toLocaleString('es-CO', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // WhatsApp phone number
+        const WHATSAPP_NUMBER = '573150646191';
+        const WHATSAPP_LINK = 'https://wa.me/573150646191';
+
+        // Initialize default categories if none exist
+        if (categories.length === 0) {
+            categories = [
+                { id: 'papers', name: 'Papers, Cueros & Blunt Wraps', emoji: '📜' },
+                { id: 'vapes', name: 'Vapes & Dispositivos Electrónicos', emoji: '💨' },
+                { id: 'lighters', name: 'Encendedores', emoji: '🔥' },
+                { id: 'glass', name: 'Cristalería & Bongs', emoji: '💎' },
+                { id: 'premium', name: 'Premium', emoji: '👑' },
+                { id: 'grinders', name: 'Grinders', emoji: '⚙️' },
+                { id: 'pipes', name: 'Pipas', emoji: '🌿' },
+                { id: 'trays', name: 'Bandejas', emoji: '🍃' },
+                { id: 'zona-rosa', name: 'Zona Rosa', emoji: '💗' }
+            ];
+            saveCategories();
+        }
+
+        // Initialize default products if none exist
+        if (products.length === 0) {
+            products = [
+                {
+                    id: 1,
+                    name: "Papers Premium Rosa",
+                    price: 15.99,
+                    category: "papers",
+                    description: "Papers de alta calidad con sabor floral",
+                    image: "🌸",
+                    isEmoji: true
+                },
+                {
+                    id: 2,
+                    name: "Vape Desechable Frutal",
+                    price: 45.99,
+                    category: "vapes",
+                    description: "Vape desechable con sabores frutales premium",
+                    image: "💨",
+                    isEmoji: true
+                },
+                {
+                    id: 3,
+                    name: "Encendedor Premium",
+                    price: 12.99,
+                    category: "lighters",
+                    description: "Encendedor recargable de alta calidad",
+                    image: "🔥",
+                    isEmoji: true
+                }
+            ];
+            saveProducts();
+        }
+
+        // Storage functions
+        function saveCategories() {
+            localStorage.setItem('lamorena_categories', JSON.stringify(categories));
+        }
+
+        function saveProducts() {
+            localStorage.setItem('lamorena_products', JSON.stringify(products));
+        }
+
+        function saveCart() {
+            localStorage.setItem('lamorena_cart', JSON.stringify(cart));
+        }
+
+        function saveRatings() {
+            localStorage.setItem('lamorena_ratings', JSON.stringify(ratings));
+        }
+
+        function saveUserRatings() {
+            localStorage.setItem('lamorena_user_ratings', JSON.stringify(userRatings));
+        }
+
+        function saveCustomers() {
+            localStorage.setItem('lamorena_customers', JSON.stringify(customers));
+        }
+
+        function saveCurrentCustomer() {
+            localStorage.setItem('lamorena_current_customer', JSON.stringify(currentCustomer));
+        }
+
+        function savePurchases() {
+            localStorage.setItem('lamorena_purchases', JSON.stringify(purchases));
+        }
+
+        function saveLogo() {
+            localStorage.setItem('lamorena_logo', JSON.stringify(logoSettings));
+        }
+
+        // Logo Management Functions
+        function updateLogo() {
+            const mainText = document.getElementById('logo-main-text').value.trim();
+            const subText = document.getElementById('logo-sub-text').value.trim();
+            const imageFile = document.getElementById('logo-image').files[0];
+
+            if (!mainText || !subText) {
+                showMessage('❌ Los textos del logo son obligatorios', 'error');
+                return;
+            }
+
+            logoSettings.mainText = mainText;
+            logoSettings.subText = subText;
+
+            if (imageFile) {
+                if (!imageFile.type.startsWith('image/')) {
+                    showMessage('❌ Por favor selecciona un archivo de imagen válido', 'error');
+                    return;
+                }
+                
+                if (imageFile.size > 5 * 1024 * 1024) {
+                    showMessage('❌ La imagen es muy grande. Máximo 5MB', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    logoSettings.customImage = e.target.result;
+                    logoSettings.useCustomImage = true;
+                    saveLogo();
+                    updateLogoDisplay();
+                    updateLogoPreview();
+                    showMessage('✅ Logo actualizado exitosamente con imagen personalizada', 'success');
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                logoSettings.useCustomImage = false;
+                logoSettings.customImage = null;
+                saveLogo();
+                updateLogoDisplay();
+                updateLogoPreview();
+                showMessage('✅ Logo actualizado exitosamente', 'success');
+            }
+        }
+
+        function resetLogo() {
+            if (confirm('¿Estás seguro de restaurar el logo original? Se perderán todos los cambios personalizados.')) {
+                logoSettings = {
+                    mainText: 'LA MORENA',
+                    subText: 'SMOKE SHOP',
+                    customImage: null,
+                    useCustomImage: false
+                };
+                saveLogo();
+                loadLogoSettings();
+                updateLogoDisplay();
+                updateLogoPreview();
+                showMessage('✅ Logo restaurado al original', 'success');
+            }
+        }
+
+        function loadLogoSettings() {
+            document.getElementById('logo-main-text').value = logoSettings.mainText;
+            document.getElementById('logo-sub-text').value = logoSettings.subText;
+            document.getElementById('logo-image').value = '';
+        }
+
+        function updateLogoDisplay() {
+            const logoContainer = document.querySelector('.floating');
+            if (!logoContainer) return;
+
+            if (logoSettings.useCustomImage && logoSettings.customImage) {
+                logoContainer.innerHTML = `
+                    <div class="mb-6">
+                        <img src="${logoSettings.customImage}" alt="Logo" class="w-32 h-32 mx-auto rounded-full shadow-2xl object-cover border-4 border-pink-300">
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-bold bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">
+                        ${logoSettings.mainText}
+                    </h1>
+                    <h2 class="text-2xl md:text-3xl font-semibold text-pink-200 mt-2">${logoSettings.subText}</h2>
+                `;
+            } else {
+                logoContainer.innerHTML = `
+                    <div class="mb-6">
+                        <svg width="120" height="120" viewBox="0 0 120 120" class="mx-auto drop-shadow-2xl">
+                            <circle cx="60" cy="60" r="55" fill="url(#logoGradient)" stroke="#ff69b4" stroke-width="3"/>
+                            <path d="M45 35 C45 25, 55 20, 60 20 C65 20, 75 25, 75 35 C75 40, 70 45, 60 45 C50 45, 45 40, 45 35 Z" fill="#fff" opacity="0.9"/>
+                            <path d="M40 30 Q50 25, 60 30 Q70 25, 80 30 Q75 40, 60 35 Q45 40, 40 30 Z" fill="#8b4513" opacity="0.8"/>
+                            <text x="60" y="65" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="serif">LA</text>
+                            <text x="60" y="78" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="serif">MORENA</text>
+                            <path d="M30 85 Q35 80, 40 85 Q45 90, 50 85" stroke="#ff69b4" stroke-width="2" fill="none" opacity="0.7"/>
+                            <path d="M70 85 Q75 80, 80 85 Q85 90, 90 85" stroke="#ff69b4" stroke-width="2" fill="none" opacity="0.7"/>
+                            <text x="25" y="25" fill="#ffd700" font-size="12">✨</text>
+                            <text x="95" y="25" fill="#ffd700" font-size="12">✨</text>
+                            <text x="25" y="95" fill="#ffd700" font-size="10">💫</text>
+                            <text x="95" y="95" fill="#ffd700" font-size="10">💫</text>
+                            <defs>
+                                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#8b5cf6"/>
+                                    <stop offset="50%" style="stop-color:#ec4899"/>
+                                    <stop offset="100%" style="stop-color:#f97316"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-bold bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">
+                        ${logoSettings.mainText}
+                    </h1>
+                    <h2 class="text-2xl md:text-3xl font-semibold text-pink-200 mt-2">${logoSettings.subText}</h2>
+                `;
+            }
+        }
+
+        function updateLogoPreview() {
+            const previewContainer = document.getElementById('logo-preview');
+            if (!previewContainer) return;
+
+            const mainText = document.getElementById('logo-main-text').value.trim() || logoSettings.mainText;
+            const subText = document.getElementById('logo-sub-text').value.trim() || logoSettings.subText;
+            const imageFile = document.getElementById('logo-image').files[0];
+
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `
+                        <div class="mb-4">
+                            <img src="${e.target.result}" alt="Logo Preview" class="w-20 h-20 mx-auto rounded-full shadow-lg object-cover border-2 border-white">
+                        </div>
+                        <h1 class="text-2xl font-bold mb-1">${mainText}</h1>
+                        <h2 class="text-lg font-semibold">${subText}</h2>
+                    `;
+                };
+                reader.readAsDataURL(imageFile);
+            } else if (logoSettings.useCustomImage && logoSettings.customImage) {
+                previewContainer.innerHTML = `
+                    <div class="mb-4">
+                        <img src="${logoSettings.customImage}" alt="Logo Preview" class="w-20 h-20 mx-auto rounded-full shadow-lg object-cover border-2 border-white">
+                    </div>
+                    <h1 class="text-2xl font-bold mb-1">${mainText}</h1>
+                    <h2 class="text-lg font-semibold">${subText}</h2>
+                `;
+            } else {
+                previewContainer.innerHTML = `
+                    <div class="mb-4">
+                        <svg width="80" height="80" viewBox="0 0 120 120" class="mx-auto drop-shadow-lg">
+                            <circle cx="60" cy="60" r="55" fill="url(#previewGradient)" stroke="#ffffff" stroke-width="2"/>
+                            <path d="M45 35 C45 25, 55 20, 60 20 C65 20, 75 25, 75 35 C75 40, 70 45, 60 45 C50 45, 45 40, 45 35 Z" fill="#fff" opacity="0.9"/>
+                            <path d="M40 30 Q50 25, 60 30 Q70 25, 80 30 Q75 40, 60 35 Q45 40, 40 30 Z" fill="#8b4513" opacity="0.8"/>
+                            <text x="60" y="65" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="serif">LA</text>
+                            <text x="60" y="75" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="serif">MORENA</text>
+                            <defs>
+                                <linearGradient id="previewGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#8b5cf6"/>
+                                    <stop offset="50%" style="stop-color:#ec4899"/>
+                                    <stop offset="100%" style="stop-color:#f97316"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold mb-1">${mainText}</h1>
+                    <h2 class="text-lg font-semibold">${subText}</h2>
+                `;
+            }
+        }
+
+        // Category Management Functions
+        function addCategory() {
+            const name = document.getElementById('new-category-name').value.trim();
+            const emoji = document.getElementById('new-category-emoji').value.trim();
+
+            if (!name || !emoji) {
+                showMessage('❌ Completa el nombre y emoji de la categoría', 'error');
+                return;
+            }
+
+            const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            
+            if (categories.find(cat => cat.id === id)) {
+                showMessage('❌ Ya existe una categoría con ese nombre', 'error');
+                return;
+            }
+
+            categories.push({ id, name, emoji });
+            saveCategories();
+            loadCategories();
+            loadAdminCategories();
+            loadProductCategoryOptions();
+            
+            document.getElementById('new-category-name').value = '';
+            document.getElementById('new-category-emoji').value = '';
+            
+            showMessage('✅ Categoría agregada exitosamente', 'success');
+        }
+
+        function editCategory(categoryId) {
+            const category = categories.find(cat => cat.id === categoryId);
+            if (!category) {
+                showMessage('❌ Categoría no encontrada', 'error');
+                return;
+            }
+            
+            currentEditingCategoryId = categoryId;
+            
+            document.getElementById('edit-category-name').value = category.name;
+            document.getElementById('edit-category-emoji').value = category.emoji;
+            
+            updateCategoryPreview();
+            
+            document.getElementById('edit-category-modal').classList.remove('hidden');
+            document.getElementById('edit-category-modal').classList.add('flex');
+            
+            setTimeout(() => {
+                document.getElementById('edit-category-name').focus();
+            }, 100);
+        }
+
+        function closeEditCategoryModal() {
+            document.getElementById('edit-category-modal').classList.add('hidden');
+            document.getElementById('edit-category-modal').classList.remove('flex');
+            currentEditingCategoryId = null;
+        }
+
+        function setEmoji(emoji) {
+            document.getElementById('edit-category-emoji').value = emoji;
+            updateCategoryPreview();
+        }
+
+        function updateCategoryPreview() {
+            const name = document.getElementById('edit-category-name').value.trim() || 'Nombre de Categoría';
+            const emoji = document.getElementById('edit-category-emoji').value.trim() || '🏷️';
+            
+            document.getElementById('category-preview').textContent = `${emoji} ${name}`;
+        }
+
+        function saveCategoryChanges() {
+            if (!currentEditingCategoryId) {
+                showMessage('❌ Error: No hay categoría seleccionada', 'error');
+                return;
+            }
+            
+            const category = categories.find(cat => cat.id === currentEditingCategoryId);
+            if (!category) {
+                showMessage('❌ Categoría no encontrada', 'error');
+                return;
+            }
+            
+            const newName = document.getElementById('edit-category-name').value.trim();
+            const newEmoji = document.getElementById('edit-category-emoji').value.trim();
+            
+            if (!newName || !newEmoji) {
+                showMessage('❌ El nombre y emoji son obligatorios', 'error');
+                return;
+            }
+            
+            const existingCategory = categories.find(cat => cat.id !== currentEditingCategoryId && cat.name.toLowerCase() === newName.toLowerCase());
+            if (existingCategory) {
+                showMessage('❌ Ya existe una categoría con ese nombre', 'error');
+                return;
+            }
+            
+            category.name = newName;
+            category.emoji = newEmoji;
+            
+            saveCategories();
+            loadCategories();
+            loadAdminCategories();
+            loadProductCategoryOptions();
+            loadEditProductCategoryOptions();
+            
+            const activeCategory = getCurrentCategory();
+            if (activeCategory === currentEditingCategoryId) {
+                showCategory(currentEditingCategoryId);
+            }
+            
+            closeEditCategoryModal();
+            showMessage('✅ Categoría actualizada exitosamente', 'success');
+        }
+
+        function deleteCategory(categoryId) {
+            const category = categories.find(cat => cat.id === categoryId);
+            if (!category) {
+                showMessage('❌ Categoría no encontrada', 'error');
+                return;
+            }
+
+            const productsInCategory = products.filter(p => p.category === categoryId);
+            
+            let confirmMessage;
+            if (productsInCategory.length > 0) {
+                confirmMessage = `🗑️ ELIMINAR CATEGORÍA CON PRODUCTOS\n\n📂 Categoría: "${category.name}"\n📦 Productos incluidos: ${productsInCategory.length}\n\n⚠️ ATENCIÓN: Al eliminar esta categoría también se eliminarán TODOS sus productos:\n\n${productsInCategory.map(p => `• ${p.name}`).join('\n')}\n\n❌ Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro de continuar?`;
+            } else {
+                confirmMessage = `🗑️ ELIMINAR CATEGORÍA\n\n📂 Categoría: "${category.name}"\n📦 Productos: Ninguno\n\n❌ Esta acción no se puede deshacer.\n\n¿Estás seguro de eliminar esta categoría?`;
+            }
+
+            showConfirmDialog(confirmMessage, () => {
+                if (productsInCategory.length > 0) {
+                    products = products.filter(p => p.category !== categoryId);
+                    
+                    const productsToRemove = productsInCategory.map(p => p.id);
+                    cart = cart.filter(item => !productsToRemove.includes(item.id));
+                    ratings = ratings.filter(r => !productsToRemove.includes(r.productId));
+                    
+                    saveProducts();
+                    saveCart();
+                    saveRatings();
+                }
+                
+                categories = categories.filter(cat => cat.id !== categoryId);
+                saveCategories();
+                
+                loadCategories();
+                loadAdminCategories();
+                loadProductCategoryOptions();
+                loadAdminProducts();
+                loadAdminRatings();
+                updateCartDisplay();
+                
+                const activeCategory = getCurrentCategory();
+                if (activeCategory === categoryId && categories.length > 0) {
+                    showCategory(categories[0].id);
+                }
+                
+                const deletedMessage = productsInCategory.length > 0 
+                    ? `✅ Categoría y ${productsInCategory.length} producto(s) eliminados exitosamente`
+                    : '✅ Categoría eliminada exitosamente';
+                showMessage(deletedMessage, 'success');
+            });
+        }
+
+        function loadAdminCategories() {
+            const container = document.getElementById('admin-categories-list');
+            if (!container) return;
+            
+            if (categories.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay categorías registradas</p>';
+                return;
+            }
+            
+            container.innerHTML = categories.map(category => `
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg mb-2">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xl">${category.emoji}</span>
+                        <div>
+                            <span class="font-semibold">${category.name}</span>
+                            <p class="text-xs text-gray-500">ID: ${category.id}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editCategory('${category.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm font-semibold transition-colors shadow-sm hover:shadow-md">
+                            ✏️ Editar
+                        </button>
+                        <button onclick="deleteCategory('${category.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm font-semibold transition-colors shadow-sm hover:shadow-md">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadProductCategoryOptions() {
+            const select = document.getElementById('product-category');
+            if (select) {
+                select.innerHTML = categories.map(category => 
+                    `<option value="${category.id}">${category.emoji} ${category.name}</option>`
+                ).join('');
+            }
+        }
+
+        function loadEditProductCategoryOptions() {
+            const select = document.getElementById('edit-product-category');
+            if (select) {
+                select.innerHTML = categories.map(category => 
+                    `<option value="${category.id}">${category.emoji} ${category.name}</option>`
+                ).join('');
+            }
+        }
+
+        // Product Management Functions
+        function editProduct(productId) {
+            const id = parseInt(productId);
+            const product = products.find(p => p.id === id);
+            if (!product) {
+                showMessage('❌ Producto no encontrado', 'error');
+                return;
+            }
+            
+            currentEditingProductId = id;
+            
+            document.getElementById('edit-product-name').value = product.name;
+            document.getElementById('edit-product-price').value = product.price.toString();
+            document.getElementById('edit-product-category').value = product.category;
+            document.getElementById('edit-product-description').value = product.description;
+            
+            loadEditProductCategoryOptions();
+            
+            document.getElementById('edit-product-modal').classList.remove('hidden');
+            document.getElementById('edit-product-modal').classList.add('flex');
+            
+            setTimeout(() => {
+                document.getElementById('edit-product-name').focus();
+            }, 100);
+        }
+
+        function closeEditProductModal() {
+            document.getElementById('edit-product-modal').classList.add('hidden');
+            document.getElementById('edit-product-modal').classList.remove('flex');
+            currentEditingProductId = null;
+        }
+
+        function saveProductChanges() {
+            if (!currentEditingProductId) {
+                showMessage('❌ Error: No hay producto seleccionado', 'error');
+                return;
+            }
+            
+            const product = products.find(p => p.id === currentEditingProductId);
+            if (!product) {
+                showMessage('❌ Producto no encontrado', 'error');
+                return;
+            }
+            
+            const newName = document.getElementById('edit-product-name').value.trim();
+            const newPriceValue = document.getElementById('edit-product-price').value.trim();
+            const newCategory = document.getElementById('edit-product-category').value;
+            const newDescription = document.getElementById('edit-product-description').value.trim();
+            
+            if (!newName || !newPriceValue || !newDescription) {
+                showMessage('❌ Todos los campos son obligatorios', 'error');
+                return;
+            }
+            
+            const newPrice = parseFloat(newPriceValue.replace(/[^\d.-]/g, ''));
+            if (isNaN(newPrice) || newPrice <= 0) {
+                showMessage('❌ El precio debe ser un número válido mayor a 0', 'error');
+                return;
+            }
+            
+            const existingProduct = products.find(p => p.id !== currentEditingProductId && p.name.toLowerCase() === newName.toLowerCase());
+            if (existingProduct) {
+                showMessage('❌ Ya existe un producto con ese nombre', 'error');
+                return;
+            }
+            
+            product.name = newName;
+            product.price = newPrice;
+            product.category = newCategory;
+            product.description = newDescription;
+            
+            const cartItem = cart.find(item => item.id === currentEditingProductId);
+            if (cartItem) {
+                cartItem.name = product.name;
+                cartItem.price = product.price;
+                cartItem.category = product.category;
+                cartItem.description = product.description;
+                saveCart();
+                updateCartDisplay();
+            }
+            
+            saveProducts();
+            loadAdminProducts();
+            
+            const activeCategory = getCurrentCategory();
+            if (activeCategory) {
+                showCategory(activeCategory);
+            }
+            
+            closeEditProductModal();
+            showMessage('✅ Producto actualizado exitosamente', 'success');
+        }
+
+        function deleteProduct(productId) {
+            const id = parseInt(productId);
+            const product = products.find(p => p.id === id);
+            if (!product) {
+                showMessage('❌ Producto no encontrado', 'error');
+                return;
+            }
+            
+            const cartItem = cart.find(item => item.id === id);
+            const productRatings = ratings.filter(r => r.productId === id);
+            
+            let confirmMessage = `🗑️ ELIMINAR PRODUCTO\n\n📦 Producto: "${product.name}"\n💰 Precio: ${formatPrice(product.price)}\n\n⚠️ ATENCIÓN: Esta acción eliminará:\n`;
+            
+            if (cartItem) {
+                confirmMessage += `• Del carrito (${cartItem.quantity} unidad${cartItem.quantity > 1 ? 'es' : ''})\n`;
+            }
+            
+            if (productRatings.length > 0) {
+                confirmMessage += `• ${productRatings.length} calificación${productRatings.length > 1 ? 'es' : ''}\n`;
+            }
+            
+            confirmMessage += `\n❌ Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro de eliminar este producto?`;
+            
+            showConfirmDialog(confirmMessage, () => {
+                products = products.filter(p => p.id !== id);
+                cart = cart.filter(item => item.id !== id);
+                ratings = ratings.filter(r => r.productId !== id);
+                
+                saveProducts();
+                saveCart();
+                saveRatings();
+                
+                loadAdminProducts();
+                loadAdminRatings();
+                updateCartDisplay();
+                
+                const activeCategory = getCurrentCategory();
+                if (activeCategory) {
+                    showCategory(activeCategory);
+                }
+                
+                let successMessage = '✅ Producto eliminado exitosamente';
+                if (cartItem && productRatings.length > 0) {
+                    successMessage += ` (incluido del carrito y ${productRatings.length} calificaciones)`;
+                } else if (cartItem) {
+                    successMessage += ' (incluido del carrito)';
+                } else if (productRatings.length > 0) {
+                    successMessage += ` (incluidas ${productRatings.length} calificaciones)`;
+                }
+                
+                showMessage(successMessage, 'success');
+            });
+        }
+
+        function loadAdminProducts() {
+            const container = document.getElementById('admin-products-list');
+            if (!container) return;
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay productos registrados</p>';
+                return;
+            }
+
+            container.innerHTML = products.map(product => {
+                const category = categories.find(cat => cat.id === product.category);
+                const categoryName = category ? category.name : 'Categoría desconocida';
+                const rating = getProductRating(product.id);
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="text-3xl">${product.isEmoji ? product.image : '📷'}</div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-lg">${product.name}</h4>
+                                    <p class="text-gray-600 text-sm mb-1">${product.description.length > 100 ? product.description.substring(0, 100) + '...' : product.description}</p>
+                                    <p class="text-pink-600 font-bold text-lg">${formatPrice(product.price)}</p>
+                                    <p class="text-xs text-gray-500">Categoría: ${categoryName}</p>
+                                    <p class="text-xs text-gray-400">ID: ${product.id}</p>
+                                    ${rating.count > 0 ? `<p class="text-xs text-yellow-600">⭐ ${rating.average} (${rating.count} calificaciones)</p>` : '<p class="text-xs text-gray-400">Sin calificaciones</p>'}
+                                </div>
+                            </div>
+                            <div class="flex flex-col space-y-3 ml-4">
+                                <button onclick="editProduct(${product.id})" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-lg text-sm font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105 min-w-[110px]">
+                                    ✏️ Editar
+                                </button>
+                                <button onclick="deleteProduct(${product.id})" class="bg-red-500 hover:bg-red-600 text-white px-5 py-3 rounded-lg text-sm font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105 min-w-[110px]">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Customer Registration Functions
+        function openRatingModal(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            // Check if user already rated this product
+            const existingUserRating = userRatings.find(ur => ur.productId === productId);
+            
+            if (existingUserRating) {
+                // If user already rated, open edit modal instead
+                editUserRating(productId);
+                return;
+            }
+
+            // Check if customer is registered
+            if (!currentCustomer) {
+                // Show registration modal first
+                currentRatingProductId = productId;
+                showCustomerRegistration();
+                return;
+            }
+
+            // Customer is registered, proceed with rating
+            proceedToRating(productId);
+        }
+
+        function showCustomerRegistration() {
+            closeProductDetail();
+            
+            // Clear form
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-phone').value = '';
+            document.getElementById('customer-email').value = '';
+            document.getElementById('customer-consent').checked = false;
+            
+            document.getElementById('customer-registration-modal').classList.remove('hidden');
+            document.getElementById('customer-registration-modal').classList.add('flex');
+            
+            setTimeout(() => {
+                document.getElementById('customer-name').focus();
+            }, 100);
+        }
+
+        function closeCustomerRegistration() {
+            document.getElementById('customer-registration-modal').classList.add('hidden');
+            document.getElementById('customer-registration-modal').classList.remove('flex');
+            currentRatingProductId = null;
+        }
+
+        function validateCustomerData() {
+            const name = document.getElementById('customer-name').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+            const email = document.getElementById('customer-email').value.trim();
+            const consent = document.getElementById('customer-consent').checked;
+
+            if (!name) {
+                showMessage('❌ El nombre completo es obligatorio', 'error');
+                document.getElementById('customer-name').focus();
+                return false;
+            }
+
+            if (name.length < 3) {
+                showMessage('❌ El nombre debe tener al menos 3 caracteres', 'error');
+                document.getElementById('customer-name').focus();
+                return false;
+            }
+
+            if (!phone) {
+                showMessage('❌ El número de celular es obligatorio', 'error');
+                document.getElementById('customer-phone').focus();
+                return false;
+            }
+
+            // Validate Colombian phone number
+            const phoneRegex = /^[3][0-9]{9}$/;
+            if (!phoneRegex.test(phone)) {
+                showMessage('❌ Ingresa un número de celular válido (10 dígitos, iniciando con 3)', 'error');
+                document.getElementById('customer-phone').focus();
+                return false;
+            }
+
+            if (!email) {
+                showMessage('❌ El correo electrónico es obligatorio', 'error');
+                document.getElementById('customer-email').focus();
+                return false;
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMessage('❌ Ingresa un correo electrónico válido', 'error');
+                document.getElementById('customer-email').focus();
+                return false;
+            }
+
+            if (!consent) {
+                showMessage('❌ Debes aceptar recibir información para continuar', 'error');
+                document.getElementById('customer-consent').focus();
+                return false;
+            }
+
+            return { name, phone, email };
+        }
+
+        function registerCustomerAndRate() {
+            const customerData = validateCustomerData();
+            if (!customerData) return;
+
+            // Check if customer already exists
+            const existingCustomer = customers.find(c => 
+                c.email.toLowerCase() === customerData.email.toLowerCase() || 
+                c.phone === customerData.phone
+            );
+
+            if (existingCustomer) {
+                // Update existing customer
+                existingCustomer.name = customerData.name;
+                existingCustomer.lastActivity = new Date().toISOString();
+                currentCustomer = existingCustomer;
+                showMessage('✅ ¡Bienvenido de nuevo! Datos actualizados', 'success');
+            } else {
+                // Create new customer
+                const newCustomer = {
+                    id: Date.now(),
+                    name: customerData.name,
+                    phone: customerData.phone,
+                    email: customerData.email,
+                    registrationDate: new Date().toISOString(),
+                    lastActivity: new Date().toISOString(),
+                    totalRatings: 0,
+                    consentGiven: true
+                };
+                
+                customers.push(newCustomer);
+                currentCustomer = newCustomer;
+                showMessage('✅ ¡Registro exitoso! Ahora puedes calificar productos', 'success');
+            }
+
+            saveCustomers();
+            saveCurrentCustomer();
+            closeCustomerRegistration();
+            
+            // Proceed to rating
+            if (currentRatingProductId) {
+                proceedToRating(currentRatingProductId);
+            }
+        }
+
+        function proceedToRating(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            currentRatingProductId = productId;
+            currentUserRating = 0;
+            
+            document.getElementById('rating-product-name').textContent = product.name;
+            document.getElementById('rating-comment').value = '';
+            
+            // Display customer info
+            if (currentCustomer) {
+                document.getElementById('customer-info-display').textContent = `👤 ${currentCustomer.name}`;
+            }
+            
+            const stars = document.querySelectorAll('#rating-stars .star');
+            stars.forEach((star, index) => {
+                star.classList.remove('filled');
+                star.style.color = '#d1d5db';
+                star.style.transform = 'scale(1)';
+                star.style.transition = 'all 0.2s ease';
+                
+                const newStar = star.cloneNode(true);
+                star.parentNode.replaceChild(newStar, star);
+            });
+            
+            const newStars = document.querySelectorAll('#rating-stars .star');
+            newStars.forEach(star => {
+                star.addEventListener('click', handleStarClick);
+                star.addEventListener('mouseover', handleStarHover);
+                star.addEventListener('mouseout', handleStarOut);
+            });
+            
+            updateRatingFeedback(0);
+            
+            document.getElementById('rating-modal').classList.remove('hidden');
+            document.getElementById('rating-modal').classList.add('flex');
+        }
+
+        function handleStarClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const clickedRating = parseInt(event.target.dataset.rating);
+            
+            currentUserRating = clickedRating;
+            updateStarDisplay(clickedRating);
+            updateRatingFeedback(clickedRating);
+            
+            event.target.style.transform = 'scale(1.3)';
+            setTimeout(() => {
+                event.target.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        function handleStarHover(event) {
+            const hoverRating = parseInt(event.target.dataset.rating);
+            const stars = document.querySelectorAll('#rating-stars .star');
+            
+            stars.forEach((star, index) => {
+                const starRating = index + 1;
+                if (starRating <= hoverRating) {
+                    star.style.color = '#fbbf24';
+                    star.style.transform = 'scale(1.1)';
+                } else {
+                    star.style.color = '#d1d5db';
+                    star.style.transform = 'scale(1)';
+                }
+            });
+        }
+
+        function handleStarOut(event) {
+            updateStarDisplay(currentUserRating);
+            
+            const stars = document.querySelectorAll('#rating-stars .star');
+            stars.forEach(star => {
+                star.style.transform = 'scale(1)';
+            });
+        }
+
+        function updateStarDisplay(rating) {
+            const stars = document.querySelectorAll('#rating-stars .star');
+            stars.forEach((star, index) => {
+                const starRating = index + 1;
+                if (starRating <= rating) {
+                    star.classList.add('filled');
+                    star.style.color = '#fbbf24';
+                } else {
+                    star.classList.remove('filled');
+                    star.style.color = '#d1d5db';
+                }
+                star.style.transform = 'scale(1)';
+            });
+        }
+
+        function updateRatingFeedback(rating) {
+            const feedback = document.getElementById('rating-feedback');
+            
+            if (rating > 0) {
+                const starString = '⭐'.repeat(rating);
+                const descriptions = ['', 'Muy malo', 'Malo', 'Regular', 'Bueno', '¡Excelente!'];
+                feedback.innerHTML = `${starString} ${descriptions[rating]} - ${rating} estrella${rating > 1 ? 's' : ''} seleccionada${rating > 1 ? 's' : ''}`;
+                feedback.className = 'text-sm text-pink-600 font-semibold';
+            } else {
+                feedback.textContent = 'Haz clic en las estrellas para calificar';
+                feedback.className = 'text-sm text-gray-600';
+            }
+        }
+
+        function submitRating() {
+            if (currentUserRating === 0) {
+                showMessage('❌ Por favor selecciona una calificación', 'error');
+                return;
+            }
+
+            if (!currentCustomer) {
+                showMessage('❌ Error: No hay cliente registrado', 'error');
+                return;
+            }
+
+            const comment = document.getElementById('rating-comment').value.trim();
+            
+            // Check if user already rated this product
+            const existingUserRating = userRatings.find(ur => ur.productId === currentRatingProductId);
+            
+            if (existingUserRating) {
+                showMessage('❌ Ya has calificado este producto. Puedes editar tu calificación desde el detalle del producto.', 'error');
+                return;
+            }
+            
+            const newRating = {
+                id: Date.now(),
+                productId: currentRatingProductId,
+                rating: currentUserRating,
+                comment: comment,
+                date: new Date().toLocaleDateString(),
+                customerName: currentCustomer.name,
+                customerId: currentCustomer.id,
+                isUserRating: true
+            };
+
+            ratings.push(newRating);
+            userRatings.push({
+                id: newRating.id,
+                productId: currentRatingProductId,
+                rating: currentUserRating,
+                comment: comment,
+                date: newRating.date,
+                customerId: currentCustomer.id
+            });
+
+            // Update customer rating count
+            currentCustomer.totalRatings = (currentCustomer.totalRatings || 0) + 1;
+            currentCustomer.lastActivity = new Date().toISOString();
+            
+            // Update customer in the customers array
+            const customerIndex = customers.findIndex(c => c.id === currentCustomer.id);
+            if (customerIndex !== -1) {
+                customers[customerIndex] = currentCustomer;
+            }
+            
+            saveRatings();
+            saveUserRatings();
+            saveCustomers();
+            saveCurrentCustomer();
+            closeRatingModal();
+            showMessage(`✅ ¡Gracias ${currentCustomer.name} por tu calificación!`, 'success');
+            
+            const activeCategory = getCurrentCategory();
+            if (activeCategory) {
+                showCategory(activeCategory);
+            }
+        }
+
+        function closeRatingModal() {
+            document.getElementById('rating-modal').classList.add('hidden');
+            document.getElementById('rating-modal').classList.remove('flex');
+            currentRatingProductId = null;
+            currentUserRating = 0;
+        }
+
+        function editUserRating(productId) {
+            const userRating = userRatings.find(ur => ur.productId === productId);
+            if (!userRating) {
+                showMessage('❌ No se encontró tu calificación', 'error');
+                return;
+            }
+
+            const product = products.find(p => p.id === productId);
+            if (!product) {
+                showMessage('❌ Producto no encontrado', 'error');
+                return;
+            }
+
+            currentEditingRatingId = userRating.id;
+            currentUserRating = userRating.rating;
+            
+            document.getElementById('edit-rating-product-name').textContent = product.name;
+            document.getElementById('edit-rating-comment').value = userRating.comment || '';
+            
+            // Setup stars for editing
+            const stars = document.querySelectorAll('#edit-rating-stars .star');
+            stars.forEach((star, index) => {
+                star.classList.remove('filled');
+                star.style.color = '#d1d5db';
+                star.style.transform = 'scale(1)';
+                star.style.transition = 'all 0.2s ease';
+                
+                const newStar = star.cloneNode(true);
+                star.parentNode.replaceChild(newStar, star);
+            });
+            
+            const newStars = document.querySelectorAll('#edit-rating-stars .star');
+            newStars.forEach(star => {
+                star.addEventListener('click', handleEditStarClick);
+                star.addEventListener('mouseover', handleEditStarHover);
+                star.addEventListener('mouseout', handleEditStarOut);
+            });
+            
+            updateEditStarDisplay(currentUserRating);
+            updateEditRatingFeedback(currentUserRating);
+            
+            document.getElementById('edit-rating-modal').classList.remove('hidden');
+            document.getElementById('edit-rating-modal').classList.add('flex');
+        }
+
+        function handleEditStarClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const clickedRating = parseInt(event.target.dataset.rating);
+            
+            currentUserRating = clickedRating;
+            updateEditStarDisplay(clickedRating);
+            updateEditRatingFeedback(clickedRating);
+            
+            event.target.style.transform = 'scale(1.3)';
+            setTimeout(() => {
+                event.target.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        function handleEditStarHover(event) {
+            const hoverRating = parseInt(event.target.dataset.rating);
+            const stars = document.querySelectorAll('#edit-rating-stars .star');
+            
+            stars.forEach((star, index) => {
+                const starRating = index + 1;
+                if (starRating <= hoverRating) {
+                    star.style.color = '#fbbf24';
+                    star.style.transform = 'scale(1.1)';
+                } else {
+                    star.style.color = '#d1d5db';
+                    star.style.transform = 'scale(1)';
+                }
+            });
+        }
+
+        function handleEditStarOut(event) {
+            updateEditStarDisplay(currentUserRating);
+            
+            const stars = document.querySelectorAll('#edit-rating-stars .star');
+            stars.forEach(star => {
+                star.style.transform = 'scale(1)';
+            });
+        }
+
+        function updateEditStarDisplay(rating) {
+            const stars = document.querySelectorAll('#edit-rating-stars .star');
+            stars.forEach((star, index) => {
+                const starRating = index + 1;
+                if (starRating <= rating) {
+                    star.classList.add('filled');
+                    star.style.color = '#fbbf24';
+                } else {
+                    star.classList.remove('filled');
+                    star.style.color = '#d1d5db';
+                }
+                star.style.transform = 'scale(1)';
+            });
+        }
+
+        function updateEditRatingFeedback(rating) {
+            const feedback = document.getElementById('edit-rating-feedback');
+            
+            if (rating > 0) {
+                const starString = '⭐'.repeat(rating);
+                const descriptions = ['', 'Muy malo', 'Malo', 'Regular', 'Bueno', '¡Excelente!'];
+                feedback.innerHTML = `${starString} ${descriptions[rating]} - ${rating} estrella${rating > 1 ? 's' : ''} seleccionada${rating > 1 ? 's' : ''}`;
+                feedback.className = 'text-sm text-pink-600 font-semibold';
+            } else {
+                feedback.textContent = 'Haz clic en las estrellas para calificar';
+                feedback.className = 'text-sm text-gray-600';
+            }
+        }
+
+        function saveEditedRating() {
+            if (currentUserRating === 0) {
+                showMessage('❌ Por favor selecciona una calificación', 'error');
+                return;
+            }
+
+            const comment = document.getElementById('edit-rating-comment').value.trim();
+            
+            // Update user rating
+            const userRating = userRatings.find(ur => ur.id === currentEditingRatingId);
+            if (userRating) {
+                userRating.rating = currentUserRating;
+                userRating.comment = comment;
+                userRating.date = new Date().toLocaleDateString();
+            }
+            
+            // Update main rating
+            const mainRating = ratings.find(r => r.id === currentEditingRatingId);
+            if (mainRating) {
+                mainRating.rating = currentUserRating;
+                mainRating.comment = comment;
+                mainRating.date = new Date().toLocaleDateString();
+            }
+            
+            saveRatings();
+            saveUserRatings();
+            closeEditRatingModal();
+            showMessage('✅ Tu calificación ha sido actualizada', 'success');
+            
+            const activeCategory = getCurrentCategory();
+            if (activeCategory) {
+                showCategory(activeCategory);
+            }
+        }
+
+        function closeEditRatingModal() {
+            document.getElementById('edit-rating-modal').classList.add('hidden');
+            document.getElementById('edit-rating-modal').classList.remove('flex');
+            currentEditingRatingId = null;
+            currentUserRating = 0;
+        }
+
+        function deleteUserRating(productId) {
+            const userRating = userRatings.find(ur => ur.productId === productId);
+            if (!userRating) {
+                showMessage('❌ No se encontró tu calificación', 'error');
+                return;
+            }
+
+            const product = products.find(p => p.id === productId);
+            const productName = product ? product.name : 'este producto';
+
+            showConfirmDialog(`🗑️ ELIMINAR MI CALIFICACIÓN\n\n📦 Producto: "${productName}"\n⭐ Tu calificación: ${userRating.rating}/5 estrellas\n\n❌ Esta acción eliminará permanentemente tu calificación y comentario.\n\n¿Estás seguro de eliminar tu calificación?`, () => {
+                // Remove from user ratings
+                const userIndex = userRatings.findIndex(ur => ur.id === userRating.id);
+                if (userIndex !== -1) {
+                    userRatings.splice(userIndex, 1);
+                }
+                
+                // Remove from main ratings
+                const mainIndex = ratings.findIndex(r => r.id === userRating.id);
+                if (mainIndex !== -1) {
+                    ratings.splice(mainIndex, 1);
+                }
+                
+                saveRatings();
+                saveUserRatings();
+                showMessage('✅ Tu calificación ha sido eliminada', 'success');
+                
+                const activeCategory = getCurrentCategory();
+                if (activeCategory) {
+                    showCategory(activeCategory);
+                }
+            });
+        }
+
+        function getProductRating(productId) {
+            const productRatings = ratings.filter(r => r.productId === productId && !r.hidden);
+            if (productRatings.length === 0) return { average: 0, count: 0 };
+            
+            const sum = productRatings.reduce((acc, r) => acc + r.rating, 0);
+            return {
+                average: (sum / productRatings.length).toFixed(1),
+                count: productRatings.length
+            };
+        }
+
+        function loadAdminCustomers() {
+            const container = document.getElementById('admin-customers-list');
+            const totalCustomersSpan = document.getElementById('total-customers');
+            const activeCustomersSpan = document.getElementById('active-customers');
+            const buyerCustomersSpan = document.getElementById('buyer-customers');
+            
+            if (customers.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay clientes registrados aún</p>';
+                totalCustomersSpan.textContent = '0';
+                activeCustomersSpan.textContent = '0';
+                buyerCustomersSpan.textContent = '0';
+                return;
+            }
+
+            // Calculate statistics
+            const totalCustomers = customers.length;
+            const activeCustomers = customers.filter(c => c.totalRatings > 0).length;
+            const buyerCustomers = customers.filter(c => {
+                return purchases.some(p => p.customerId === c.id);
+            }).length;
+            
+            totalCustomersSpan.textContent = totalCustomers;
+            activeCustomersSpan.textContent = activeCustomers;
+            buyerCustomersSpan.textContent = buyerCustomers;
+
+            // Sort customers by registration date (newest first)
+            const sortedCustomers = [...customers].sort((a, b) => 
+                new Date(b.registrationDate) - new Date(a.registrationDate)
+            );
+
+            container.innerHTML = sortedCustomers.map(customer => {
+                const registrationDate = new Date(customer.registrationDate).toLocaleDateString();
+                const lastActivity = new Date(customer.lastActivity).toLocaleDateString();
+                const isActive = customer.totalRatings > 0;
+                
+                // Calculate purchase statistics
+                const customerPurchases = purchases.filter(p => p.customerId === customer.id);
+                const totalPurchases = customerPurchases.length;
+                const totalSpent = customerPurchases.reduce((sum, p) => sum + p.total, 0);
+                const hasPurchases = totalPurchases > 0;
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow ${hasPurchases ? 'border-l-4 border-l-green-500' : ''}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h4 class="font-semibold text-lg">${customer.name}</h4>
+                                    ${isActive ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Activo</span>' : '<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Nuevo</span>'}
+                                    ${hasPurchases ? '<span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">💰 Comprador</span>' : ''}
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                                    <p><strong>📱 Celular:</strong> ${customer.phone}</p>
+                                    <p><strong>📧 Email:</strong> ${customer.email}</p>
+                                    <p><strong>📅 Registro:</strong> ${registrationDate}</p>
+                                    <p><strong>🕒 Última actividad:</strong> ${lastActivity}</p>
+                                    <p><strong>⭐ Calificaciones:</strong> ${customer.totalRatings || 0}</p>
+                                    <p><strong>🛒 Compras realizadas:</strong> ${totalPurchases}</p>
+                                    <p><strong>💰 Total gastado:</strong> ${totalSpent > 0 ? formatPrice(totalSpent) : '$0'}</p>
+                                    <p><strong>🔒 Consentimiento:</strong> ${customer.consentGiven ? 'Sí' : 'No'}</p>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-2">ID: ${customer.id}</p>
+                            </div>
+                            <div class="flex flex-col space-y-2 ml-4">
+                                <button onclick="contactCustomer('${customer.phone}', '${customer.name}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-xs font-semibold">
+                                    💬 WhatsApp
+                                </button>
+                                <button onclick="emailCustomer('${customer.email}', '${customer.name}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-xs font-semibold">
+                                    📧 Email
+                                </button>
+                                <button onclick="deleteCustomer(${customer.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-xs font-semibold">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function contactCustomer(phone, name) {
+            const message = encodeURIComponent(`¡Hola ${name}! 👋\n\nGracias por ser parte de La Morena Smoke Shop. Tenemos ofertas especiales para ti 🌟\n\n¿Te interesa conocer nuestras promociones exclusivas?`);
+            
+            // Asegurar que el número tenga el formato correcto
+            let formattedPhone = phone;
+            if (!phone.startsWith('57')) {
+                formattedPhone = '57' + phone;
+            }
+            
+            const whatsappUrl = `https://wa.me/${formattedPhone}?text=${message}`;
+            
+            try {
+                window.open(whatsappUrl, '_blank');
+            } catch (error) {
+                showMessage(`📱 Contacta al cliente: +${formattedPhone}`, 'info');
+            }
+        }
+
+        function emailCustomer(email, name) {
+            const subject = encodeURIComponent('Ofertas Exclusivas - La Morena Smoke Shop');
+            const body = encodeURIComponent(`Hola ${name},\n\nGracias por ser parte de nuestra comunidad en La Morena Smoke Shop.\n\nTenemos ofertas especiales pensadas especialmente para ti.\n\n¡Esperamos verte pronto!\n\nSaludos,\nEquipo La Morena Smoke Shop`);
+            const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+            window.open(mailtoUrl, '_blank');
+        }
+
+        function deleteCustomer(customerId) {
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) {
+                showMessage('❌ Cliente no encontrado', 'error');
+                return;
+            }
+
+            const customerRatings = ratings.filter(r => r.customerId === customerId);
+            
+            let confirmMessage = `🗑️ ELIMINAR CLIENTE\n\n👤 Cliente: "${customer.name}"\n📱 Celular: ${customer.phone}\n📧 Email: ${customer.email}\n⭐ Calificaciones: ${customer.totalRatings || 0}\n\n⚠️ ATENCIÓN: Esta acción eliminará:\n`;
+            
+            if (customerRatings.length > 0) {
+                confirmMessage += `• Todas sus calificaciones (${customerRatings.length})\n`;
+            }
+            confirmMessage += `• Sus datos personales\n• Su historial de actividad\n\n❌ Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro de eliminar este cliente?`;
+            
+            showConfirmDialog(confirmMessage, () => {
+                // Remove customer ratings
+                ratings = ratings.filter(r => r.customerId !== customerId);
+                userRatings = userRatings.filter(ur => ur.customerId !== customerId);
+                
+                // Remove customer
+                customers = customers.filter(c => c.id !== customerId);
+                
+                // If it's the current customer, clear it
+                if (currentCustomer && currentCustomer.id === customerId) {
+                    currentCustomer = null;
+                    saveCurrentCustomer();
+                }
+                
+                saveCustomers();
+                saveRatings();
+                saveUserRatings();
+                
+                loadAdminCustomers();
+                loadAdminRatings();
+                
+                const activeCategory = getCurrentCategory();
+                if (activeCategory) {
+                    showCategory(activeCategory);
+                }
+                
+                let successMessage = '✅ Cliente eliminado exitosamente';
+                if (customerRatings.length > 0) {
+                    successMessage += ` (incluidas ${customerRatings.length} calificaciones)`;
+                }
+                
+                showMessage(successMessage, 'success');
+            });
+        }
+
+        function exportCustomers() {
+            if (customers.length === 0) {
+                showMessage('❌ No hay clientes para exportar', 'error');
+                return;
+            }
+
+            // Show export options modal
+            showExportModal();
+        }
+
+        function showExportModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 modal flex items-center justify-center z-[10001]';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <div class="text-4xl mb-3">📥</div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Exportar Base de Datos</h3>
+                        <p class="text-sm text-gray-600">Elige cómo quieres exportar los datos de ${customers.length} clientes</p>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <button onclick="downloadCSV()" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                            📄 Descargar Archivo CSV
+                        </button>
+                        <button onclick="copyToClipboard()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                            📋 Copiar al Portapapeles
+                        </button>
+                        <button onclick="showDataPreview()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                            👁️ Ver Datos en Pantalla
+                        </button>
+                        <button onclick="sendByWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors">
+                            📱 Enviar por WhatsApp
+                        </button>
+                    </div>
+                    
+                    <button onclick="closeExportModal()" class="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg font-semibold transition-colors">
+                        ❌ Cancelar
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            window.currentExportModal = modal;
+        }
+
+        function closeExportModal() {
+            if (window.currentExportModal) {
+                document.body.removeChild(window.currentExportModal);
+                window.currentExportModal = null;
+            }
+        }
+
+        function generateCSVContent() {
+            const headers = ['Nombre', 'Celular', 'Email', 'Fecha Registro', 'Última Actividad', 'Total Calificaciones', 'Consentimiento'];
+            return [
+                headers.join(','),
+                ...customers.map(customer => [
+                    `"${customer.name}"`,
+                    customer.phone,
+                    customer.email,
+                    new Date(customer.registrationDate).toLocaleDateString(),
+                    new Date(customer.lastActivity).toLocaleDateString(),
+                    customer.totalRatings || 0,
+                    customer.consentGiven ? 'Sí' : 'No'
+                ].join(','))
+            ].join('\n');
+        }
+
+        function downloadCSV() {
+            try {
+                const csvContent = generateCSVContent();
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', `clientes_lamorena_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                
+                closeExportModal();
+                showMessage(`✅ Archivo CSV descargado: ${customers.length} clientes`, 'success');
+            } catch (error) {
+                console.error('Error downloading CSV:', error);
+                showMessage('❌ Error al descargar. Intenta copiar al portapapeles.', 'error');
+            }
+        }
+
+        function copyToClipboard() {
+            try {
+                const csvContent = generateCSVContent();
+                navigator.clipboard.writeText(csvContent).then(() => {
+                    closeExportModal();
+                    showMessage(`✅ Datos copiados al portapapeles (${customers.length} clientes)`, 'success');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = csvContent;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    try {
+                        document.execCommand('copy');
+                        closeExportModal();
+                        showMessage(`✅ Datos copiados al portapapeles (${customers.length} clientes)`, 'success');
+                    } catch (err) {
+                        showMessage('❌ Error al copiar. Usa la opción "Ver en Pantalla".', 'error');
+                    }
+                    
+                    document.body.removeChild(textArea);
+                });
+            } catch (error) {
+                showMessage('❌ Error al copiar. Usa la opción "Ver en Pantalla".', 'error');
+            }
+        }
+
+        function showDataPreview() {
+            closeExportModal();
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 modal flex items-center justify-center z-[10001]';
+            
+            const csvContent = generateCSVContent();
+            const htmlTable = generateHTMLTable();
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-gray-800">📊 Base de Datos de Clientes</h3>
+                        <button onclick="closeDataPreview()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+                    </div>
+                    
+                    <div class="mb-4 flex gap-2">
+                        <button onclick="copyPreviewData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                            📋 Copiar Datos
+                        </button>
+                        <button onclick="downloadFromPreview()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                            📄 Descargar CSV
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-auto max-h-[60vh] border border-gray-200 rounded-lg">
+                        ${htmlTable}
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-600">
+                            <strong>Total de clientes:</strong> ${customers.length} | 
+                            <strong>Clientes activos:</strong> ${customers.filter(c => c.totalRatings > 0).length} |
+                            <strong>Fecha de exportación:</strong> ${new Date().toLocaleDateString()}
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            window.currentDataPreview = modal;
+            window.currentCSVContent = csvContent;
+        }
+
+        function generateHTMLTable() {
+            const headers = ['Nombre', 'Celular', 'Email', 'Fecha Registro', 'Última Actividad', 'Total Calificaciones', 'Consentimiento'];
+            
+            let html = '<table class="w-full text-sm"><thead class="bg-gray-100"><tr>';
+            headers.forEach(header => {
+                html += `<th class="px-3 py-2 text-left font-semibold">${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            customers.forEach((customer, index) => {
+                const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                html += `<tr class="${bgClass}">`;
+                html += `<td class="px-3 py-2 border-b">${customer.name}</td>`;
+                html += `<td class="px-3 py-2 border-b">${customer.phone}</td>`;
+                html += `<td class="px-3 py-2 border-b">${customer.email}</td>`;
+                html += `<td class="px-3 py-2 border-b">${new Date(customer.registrationDate).toLocaleDateString()}</td>`;
+                html += `<td class="px-3 py-2 border-b">${new Date(customer.lastActivity).toLocaleDateString()}</td>`;
+                html += `<td class="px-3 py-2 border-b text-center">${customer.totalRatings || 0}</td>`;
+                html += `<td class="px-3 py-2 border-b text-center">${customer.consentGiven ? 'Sí' : 'No'}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function closeDataPreview() {
+            if (window.currentDataPreview) {
+                document.body.removeChild(window.currentDataPreview);
+                window.currentDataPreview = null;
+                window.currentCSVContent = null;
+            }
+        }
+
+        function copyPreviewData() {
+            if (window.currentCSVContent) {
+                navigator.clipboard.writeText(window.currentCSVContent).then(() => {
+                    showMessage(`✅ Datos copiados al portapapeles (${customers.length} clientes)`, 'success');
+                }).catch(() => {
+                    showMessage('❌ Error al copiar datos', 'error');
+                });
+            }
+        }
+
+        function downloadFromPreview() {
+            if (window.currentCSVContent) {
+                try {
+                    const blob = new Blob([window.currentCSVContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `clientes_lamorena_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden';
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    showMessage(`✅ Archivo CSV descargado: ${customers.length} clientes`, 'success');
+                } catch (error) {
+                    showMessage('❌ Error al descargar archivo', 'error');
+                }
+            }
+        }
+
+        function sendByWhatsApp() {
+            if (customers.length === 0) return;
+            
+            let message = `📊 BASE DE DATOS - LA MORENA SMOKE SHOP\n`;
+            message += `📅 Fecha: ${new Date().toLocaleDateString()}\n`;
+            message += `👥 Total clientes: ${customers.length}\n`;
+            message += `⭐ Clientes activos: ${customers.filter(c => c.totalRatings > 0).length}\n\n`;
+            
+            message += `📋 LISTADO DE CLIENTES:\n\n`;
+            
+            customers.slice(0, 10).forEach((customer, index) => {
+                message += `${index + 1}. ${customer.name}\n`;
+                message += `   📱 ${customer.phone}\n`;
+                message += `   📧 ${customer.email}\n`;
+                message += `   📅 ${new Date(customer.registrationDate).toLocaleDateString()}\n`;
+                message += `   ⭐ ${customer.totalRatings || 0} calificaciones\n\n`;
+            });
+            
+            if (customers.length > 10) {
+                message += `... y ${customers.length - 10} clientes más.\n\n`;
+            }
+            
+            message += `💾 Datos completos disponibles en el sistema.`;
+            
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/573150646191?text=${encodedMessage}`;
+            
+            try {
+                window.open(whatsappUrl, '_blank');
+                closeExportModal();
+                showMessage('✅ Resumen enviado por WhatsApp', 'success');
+            } catch (error) {
+                navigator.clipboard.writeText(message).then(() => {
+                    closeExportModal();
+                    showMessage('📋 Resumen copiado. Envíalo por WhatsApp: +57 315 064-6191', 'info');
+                }).catch(() => {
+                    closeExportModal();
+                    showMessage('❌ Error al enviar. Contacta: +57 315 064-6191', 'error');
+                });
+            }
+        }
+
+        function markPurchaseCompleted() {
+            if (cart.length === 0) {
+                showMessage('❌ No hay productos en el carrito', 'error');
+                return;
+            }
+
+            if (!currentCustomer) {
+                showMessage('❌ Debes estar registrado para marcar una compra', 'error');
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const paymentMethod = document.getElementById('payment-method').value;
+            
+            const purchase = {
+                id: Date.now(),
+                customerId: currentCustomer.id,
+                customerName: currentCustomer.name,
+                customerPhone: currentCustomer.phone,
+                customerEmail: currentCustomer.email,
+                items: [...cart],
+                total: total,
+                paymentMethod: paymentMethod,
+                date: new Date().toISOString(),
+                status: 'completed'
+            };
+
+            purchases.push(purchase);
+            
+            // Update customer last activity
+            currentCustomer.lastActivity = new Date().toISOString();
+            const customerIndex = customers.findIndex(c => c.id === currentCustomer.id);
+            if (customerIndex !== -1) {
+                customers[customerIndex] = currentCustomer;
+            }
+
+            // Clear cart
+            cart = [];
+            
+            savePurchases();
+            saveCustomers();
+            saveCurrentCustomer();
+            saveCart();
+            
+            updateCartDisplay();
+            toggleCart();
+            
+            showMessage(`✅ ¡Compra registrada exitosamente! Total: ${formatPrice(total)}`, 'success');
+        }
+
+        function loadAdminPurchases() {
+            const container = document.getElementById('admin-purchases-list');
+            const totalSalesSpan = document.getElementById('total-sales');
+            const totalPurchasesSpan = document.getElementById('total-purchases');
+            
+            if (purchases.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay compras registradas aún</p>';
+                totalSalesSpan.textContent = '$0';
+                totalPurchasesSpan.textContent = '0';
+                return;
+            }
+
+            // Calculate statistics
+            const totalSales = purchases.reduce((sum, p) => sum + p.total, 0);
+            const totalPurchasesCount = purchases.length;
+            
+            totalSalesSpan.textContent = formatPrice(totalSales);
+            totalPurchasesSpan.textContent = totalPurchasesCount;
+
+            // Sort purchases by date (newest first)
+            const sortedPurchases = [...purchases].sort((a, b) => 
+                new Date(b.date) - new Date(a.date)
+            );
+
+            container.innerHTML = sortedPurchases.map(purchase => {
+                const purchaseDate = new Date(purchase.date).toLocaleDateString();
+                const purchaseTime = new Date(purchase.date).toLocaleTimeString();
+                
+                const paymentMethods = {
+                    'transferencia': '🏦 Transferencia',
+                    'efectivo': '💵 Efectivo',
+                    'datafono': '💳 Datáfono',
+                    'link-pago': '🔗 Link de Pago'
+                };
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h4 class="font-semibold text-lg">Compra #${purchase.id}</h4>
+                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">✅ Completada</span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
+                                    <p><strong>👤 Cliente:</strong> ${purchase.customerName}</p>
+                                    <p><strong>📱 Celular:</strong> ${purchase.customerPhone}</p>
+                                    <p><strong>📧 Email:</strong> ${purchase.customerEmail}</p>
+                                    <p><strong>📅 Fecha:</strong> ${purchaseDate} ${purchaseTime}</p>
+                                    <p><strong>💳 Pago:</strong> ${paymentMethods[purchase.paymentMethod] || purchase.paymentMethod}</p>
+                                    <p><strong>💰 Total:</strong> <span class="font-bold text-green-600">${formatPrice(purchase.total)}</span></p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="font-semibold text-sm mb-2">📦 Productos comprados:</p>
+                                    <div class="space-y-1">
+                                        ${purchase.items.map(item => `
+                                            <div class="flex justify-between text-xs">
+                                                <span>${item.name} x${item.quantity}</span>
+                                                <span>${formatPrice(item.price * item.quantity)}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-2">ID: ${purchase.id}</p>
+                            </div>
+                            <div class="flex flex-col space-y-2 ml-4">
+                                <button onclick="contactCustomer('${purchase.customerPhone}', '${purchase.customerName}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-xs font-semibold">
+                                    💬 WhatsApp
+                                </button>
+                                <button onclick="deletePurchase(${purchase.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-xs font-semibold">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deletePurchase(purchaseId) {
+            const purchase = purchases.find(p => p.id === purchaseId);
+            if (!purchase) {
+                showMessage('❌ Compra no encontrada', 'error');
+                return;
+            }
+
+            showConfirmDialog(`🗑️ ELIMINAR COMPRA\n\n📦 Compra: #${purchase.id}\n👤 Cliente: ${purchase.customerName}\n💰 Total: ${formatPrice(purchase.total)}\n📅 Fecha: ${new Date(purchase.date).toLocaleDateString()}\n\n❌ Esta acción NO se puede deshacer.\n\n¿Estás seguro de eliminar esta compra?`, () => {
+                purchases = purchases.filter(p => p.id !== purchaseId);
+                savePurchases();
+                loadAdminPurchases();
+                loadAdminCustomers();
+                showMessage('✅ Compra eliminada exitosamente', 'success');
+            });
+        }
+
+        function exportPurchases() {
+            if (purchases.length === 0) {
+                showMessage('❌ No hay compras para exportar', 'error');
+                return;
+            }
+
+            showPurchaseExportModal();
+        }
+
+        function showPurchaseExportModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 modal flex items-center justify-center z-[10001]';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <div class="text-4xl mb-3">📥</div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Exportar Historial de Compras</h3>
+                        <p class="text-sm text-gray-600">Elige cómo quieres exportar ${purchases.length} compras registradas</p>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <button onclick="downloadPurchasesCSV()" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                            📄 Descargar Archivo CSV
+                        </button>
+                        <button onclick="copyPurchasesToClipboard()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                            📋 Copiar al Portapapeles
+                        </button>
+                        <button onclick="showPurchasesPreview()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                            👁️ Ver Datos en Pantalla
+                        </button>
+                    </div>
+                    
+                    <button onclick="closePurchaseExportModal()" class="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg font-semibold transition-colors">
+                        ❌ Cancelar
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            window.currentPurchaseExportModal = modal;
+        }
+
+        function closePurchaseExportModal() {
+            if (window.currentPurchaseExportModal) {
+                document.body.removeChild(window.currentPurchaseExportModal);
+                window.currentPurchaseExportModal = null;
+            }
+        }
+
+        function generatePurchasesCSVContent() {
+            const headers = ['ID Compra', 'Cliente', 'Celular', 'Email', 'Fecha', 'Productos', 'Método Pago', 'Total'];
+            return [
+                headers.join(','),
+                ...purchases.map(purchase => [
+                    purchase.id,
+                    `"${purchase.customerName}"`,
+                    purchase.customerPhone,
+                    purchase.customerEmail,
+                    new Date(purchase.date).toLocaleDateString(),
+                    `"${purchase.items.map(item => `${item.name} x${item.quantity}`).join('; ')}"`,
+                    purchase.paymentMethod,
+                    purchase.total
+                ].join(','))
+            ].join('\n');
+        }
+
+        function downloadPurchasesCSV() {
+            try {
+                const csvContent = generatePurchasesCSVContent();
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', `compras_lamorena_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                
+                closePurchaseExportModal();
+                showMessage(`✅ Archivo CSV descargado: ${purchases.length} compras`, 'success');
+            } catch (error) {
+                showMessage('❌ Error al descargar. Intenta copiar al portapapeles.', 'error');
+            }
+        }
+
+        function copyPurchasesToClipboard() {
+            try {
+                const csvContent = generatePurchasesCSVContent();
+                navigator.clipboard.writeText(csvContent).then(() => {
+                    closePurchaseExportModal();
+                    showMessage(`✅ Datos copiados al portapapeles (${purchases.length} compras)`, 'success');
+                }).catch(() => {
+                    showMessage('❌ Error al copiar. Usa la opción "Ver en Pantalla".', 'error');
+                });
+            } catch (error) {
+                showMessage('❌ Error al copiar. Usa la opción "Ver en Pantalla".', 'error');
+            }
+        }
+
+        function showPurchasesPreview() {
+            closePurchaseExportModal();
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 modal flex items-center justify-center z-[10001]';
+            
+            const csvContent = generatePurchasesCSVContent();
+            const totalSales = purchases.reduce((sum, p) => sum + p.total, 0);
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-gray-800">🛒 Historial de Compras</h3>
+                        <button onclick="closePurchasesPreview()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+                    </div>
+                    
+                    <div class="mb-4 flex gap-2">
+                        <button onclick="copyPurchasesPreviewData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                            📋 Copiar Datos
+                        </button>
+                        <button onclick="downloadPurchasesFromPreview()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                            📄 Descargar CSV
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-auto max-h-[60vh] border border-gray-200 rounded-lg">
+                        ${generatePurchasesHTMLTable()}
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-600">
+                            <strong>Total de compras:</strong> ${purchases.length} | 
+                            <strong>Total de ventas:</strong> ${formatPrice(totalSales)} |
+                            <strong>Fecha de exportación:</strong> ${new Date().toLocaleDateString()}
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            window.currentPurchasesPreview = modal;
+            window.currentPurchasesCSVContent = csvContent;
+        }
+
+        function generatePurchasesHTMLTable() {
+            const headers = ['ID', 'Cliente', 'Celular', 'Fecha', 'Productos', 'Método Pago', 'Total'];
+            
+            let html = '<table class="w-full text-sm"><thead class="bg-gray-100"><tr>';
+            headers.forEach(header => {
+                html += `<th class="px-3 py-2 text-left font-semibold">${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            purchases.forEach((purchase, index) => {
+                const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                const paymentMethods = {
+                    'transferencia': '🏦 Transferencia',
+                    'efectivo': '💵 Efectivo',
+                    'datafono': '💳 Datáfono',
+                    'link-pago': '🔗 Link de Pago'
+                };
+                
+                html += `<tr class="${bgClass}">`;
+                html += `<td class="px-3 py-2 border-b">#${purchase.id}</td>`;
+                html += `<td class="px-3 py-2 border-b">${purchase.customerName}</td>`;
+                html += `<td class="px-3 py-2 border-b">${purchase.customerPhone}</td>`;
+                html += `<td class="px-3 py-2 border-b">${new Date(purchase.date).toLocaleDateString()}</td>`;
+                html += `<td class="px-3 py-2 border-b text-xs">${purchase.items.map(item => `${item.name} x${item.quantity}`).join(', ')}</td>`;
+                html += `<td class="px-3 py-2 border-b">${paymentMethods[purchase.paymentMethod] || purchase.paymentMethod}</td>`;
+                html += `<td class="px-3 py-2 border-b font-bold text-green-600">${formatPrice(purchase.total)}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function closePurchasesPreview() {
+            if (window.currentPurchasesPreview) {
+                document.body.removeChild(window.currentPurchasesPreview);
+                window.currentPurchasesPreview = null;
+                window.currentPurchasesCSVContent = null;
+            }
+        }
+
+        function copyPurchasesPreviewData() {
+            if (window.currentPurchasesCSVContent) {
+                navigator.clipboard.writeText(window.currentPurchasesCSVContent).then(() => {
+                    showMessage(`✅ Datos copiados al portapapeles (${purchases.length} compras)`, 'success');
+                }).catch(() => {
+                    showMessage('❌ Error al copiar datos', 'error');
+                });
+            }
+        }
+
+        function downloadPurchasesFromPreview() {
+            if (window.currentPurchasesCSVContent) {
+                try {
+                    const blob = new Blob([window.currentPurchasesCSVContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `compras_lamorena_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden';
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    showMessage(`✅ Archivo CSV descargado: ${purchases.length} compras`, 'success');
+                } catch (error) {
+                    showMessage('❌ Error al descargar archivo', 'error');
+                }
+            }
+        }
+
+        function loadAdminRatings() {
+            const container = document.getElementById('admin-ratings-list');
+            if (ratings.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay calificaciones aún</p>';
+                return;
+            }
+
+            container.innerHTML = ratings.map(rating => {
+                const product = products.find(p => p.id === rating.productId);
+                const productName = product ? product.name : 'Producto eliminado';
+                const isHidden = rating.hidden || false;
+                const customerName = rating.customerName || 'Cliente anónimo';
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-3 ${isHidden ? 'opacity-50 bg-gray-50' : ''}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold">${productName} ${isHidden ? '(OCULTA)' : ''}</h4>
+                                <p class="text-sm text-blue-600 font-semibold">👤 ${customerName}</p>
+                                <div class="flex items-center space-x-2 my-2">
+                                    <div class="rating-display flex">
+                                        ${Array.from({length: 5}, (_, i) => 
+                                            `<span class="star text-sm ${i < rating.rating ? 'filled' : 'text-gray-300'}">⭐</span>`
+                                        ).join('')}
+                                    </div>
+                                    <span class="text-sm text-gray-600">(${rating.rating}/5)</span>
+                                </div>
+                                ${rating.comment ? `<p class="text-gray-700 text-sm">"${rating.comment}"</p>` : ''}
+                                <p class="text-xs text-gray-500 mt-2">Fecha: ${rating.date}</p>
+                            </div>
+                            <div class="flex flex-col space-y-1">
+                                <button onclick="toggleRatingVisibility(${rating.id})" class="bg-${isHidden ? 'green' : 'yellow'}-500 hover:bg-${isHidden ? 'green' : 'yellow'}-600 text-white px-2 py-1 rounded text-xs">
+                                    ${isHidden ? '👁️ Mostrar' : '🙈 Ocultar'}
+                                </button>
+                                <button onclick="deleteRating(${rating.id})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">
+                                    🗑️ Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleRatingVisibility(ratingId) {
+            const rating = ratings.find(r => r.id === ratingId);
+            if (rating) {
+                rating.hidden = !rating.hidden;
+                saveRatings();
+                loadAdminRatings();
+                showMessage(rating.hidden ? '✅ Calificación ocultada' : '✅ Calificación mostrada', 'success');
+                
+                const activeCategory = getCurrentCategory();
+                if (activeCategory) {
+                    showCategory(activeCategory);
+                }
+            }
+        }
+
+        function deleteRating(ratingId) {
+            showConfirmDialog('🗑️ ELIMINAR CALIFICACIÓN\n\n⚠️ Esta acción eliminará permanentemente la calificación.\n\n❌ Esta acción NO se puede deshacer.\n\n¿Estás seguro de eliminar esta calificación?', () => {
+                ratings = ratings.filter(r => r.id !== ratingId);
+                saveRatings();
+                loadAdminRatings();
+                showMessage('✅ Calificación eliminada permanentemente', 'success');
+                
+                const activeCategory = getCurrentCategory();
+                if (activeCategory) {
+                    showCategory(activeCategory);
+                }
+            });
+        }
+
+        // Admin functions
+        function showAdminLogin() {
+            document.getElementById('admin-login-modal').classList.remove('hidden');
+            document.getElementById('admin-login-modal').classList.add('flex');
+        }
+
+        function hideAdminLogin() {
+            document.getElementById('admin-login-modal').classList.add('hidden');
+            document.getElementById('admin-login-modal').classList.remove('flex');
+            document.getElementById('admin-password').value = '';
+        }
+
+        function checkAdminPassword() {
+            const password = document.getElementById('admin-password').value;
+            if (password === 'lamorena2024') {
+                hideAdminLogin();
+                showAdminPanel();
+            } else {
+                showMessage('❌ Contraseña incorrecta', 'error');
+            }
+        }
+
+        function showAdminPanel() {
+            isAdminMode = true;
+            document.getElementById('admin-panel').classList.remove('hidden');
+            loadLogoSettings();
+            updateLogoPreview();
+            loadAdminCategories();
+            loadProductCategoryOptions();
+            loadAdminProducts();
+            loadAdminCustomers();
+            loadAdminPurchases();
+            loadAdminRatings();
+        }
+
+        function hideAdminPanel() {
+            isAdminMode = false;
+            document.getElementById('admin-panel').classList.add('hidden');
+            loadProducts();
+        }
+
+        function addProduct() {
+            const name = document.getElementById('product-name').value.trim();
+            const priceValue = document.getElementById('product-price').value.trim();
+            const category = document.getElementById('product-category').value;
+            const description = document.getElementById('product-description').value.trim();
+            const imageFile = document.getElementById('product-image').files[0];
+
+            if (!name) {
+                showMessage('❌ El nombre del producto es obligatorio', 'error');
+                return;
+            }
+            
+            if (!priceValue || isNaN(parseFloat(priceValue)) || parseFloat(priceValue) <= 0) {
+                showMessage('❌ El precio debe ser un número válido mayor a 0', 'error');
+                return;
+            }
+            
+            if (!description) {
+                showMessage('❌ La descripción es obligatoria', 'error');
+                return;
+            }
+
+            const price = parseFloat(priceValue);
+
+            const newProduct = {
+                id: Date.now(),
+                name: name,
+                price: price,
+                category: category,
+                description: description,
+                image: '📦',
+                isEmoji: true
+            };
+
+            if (imageFile) {
+                if (!imageFile.type.startsWith('image/')) {
+                    showMessage('❌ Por favor selecciona un archivo de imagen válido', 'error');
+                    return;
+                }
+                
+                if (imageFile.size > 5 * 1024 * 1024) {
+                    showMessage('❌ La imagen es muy grande. Máximo 5MB', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newProduct.image = e.target.result;
+                    newProduct.isEmoji = false;
+                    products.push(newProduct);
+                    saveProducts();
+                    loadAdminProducts();
+                    clearProductForm();
+                    showMessage('✅ Producto agregado exitosamente con imagen', 'success');
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                products.push(newProduct);
+                saveProducts();
+                loadAdminProducts();
+                clearProductForm();
+                showMessage('✅ Producto agregado exitosamente', 'success');
+            }
+        }
+
+        function clearProductForm() {
+            document.getElementById('product-name').value = '';
+            document.getElementById('product-price').value = '';
+            document.getElementById('product-description').value = '';
+            document.getElementById('product-image').value = '';
+        }
+
+        function showMessage(message, type = 'success') {
+            const messageDiv = document.getElementById('success-message');
+            const messageText = document.getElementById('success-text');
+            
+            if (!messageDiv || !messageText) {
+                alert(message);
+                return;
+            }
+            
+            messageText.textContent = message;
+            
+            let bgColor = 'bg-green-500';
+            if (type === 'error') {
+                bgColor = 'bg-red-500';
+            } else if (type === 'info') {
+                bgColor = 'bg-blue-500';
+            } else if (type === 'warning') {
+                bgColor = 'bg-yellow-500';
+            }
+            
+            messageDiv.querySelector('div').className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg success-message`;
+            
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 4000);
+        }
+
+        function showConfirmDialog(message, onConfirm) {
+            const dialog = document.getElementById('confirm-dialog');
+            const messageElement = document.getElementById('confirm-message');
+            const cancelButton = document.getElementById('confirm-cancel');
+            const acceptButton = document.getElementById('confirm-accept');
+            
+            messageElement.textContent = message;
+            
+            // Remove previous event listeners
+            const newCancelButton = cancelButton.cloneNode(true);
+            const newAcceptButton = acceptButton.cloneNode(true);
+            cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+            acceptButton.parentNode.replaceChild(newAcceptButton, acceptButton);
+            
+            // Add new event listeners
+            newCancelButton.addEventListener('click', () => {
+                dialog.classList.add('hidden');
+                dialog.classList.remove('flex');
+            });
+            
+            newAcceptButton.addEventListener('click', () => {
+                dialog.classList.add('hidden');
+                dialog.classList.remove('flex');
+                onConfirm();
+            });
+            
+            // Show dialog
+            dialog.classList.remove('hidden');
+            dialog.classList.add('flex');
+        }
+
+        function getCurrentCategory() {
+            const activeButton = document.querySelector('.category-card.ring-4');
+            if (!activeButton) return null;
+            return activeButton.dataset.category;
+        }
+
+        // Category and Product display functions
+        function loadCategories() {
+            const container = document.getElementById('categories-container');
+            container.innerHTML = categories.map(category => `
+                <button onclick="showCategory('${category.id}')" data-category="${category.id}" class="category-card bg-gradient-to-r from-pink-400 to-purple-500 text-white py-3 px-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl text-sm">
+                    ${category.emoji} ${category.name}
+                </button>
+            `).join('');
+        }
+
+        function showCategory(categoryId) {
+            const filteredProducts = products.filter(p => p.category === categoryId);
+            const category = categories.find(cat => cat.id === categoryId);
+            displayProducts(filteredProducts, category);
+            
+            const buttons = document.querySelectorAll('.category-card');
+            buttons.forEach(button => {
+                button.classList.remove('ring-4', 'ring-white', 'ring-opacity-50');
+            });
+            
+            const activeButton = document.querySelector(`[data-category="${categoryId}"]`);
+            if (activeButton) {
+                activeButton.classList.add('ring-4', 'ring-white', 'ring-opacity-50');
+            }
+        }
+
+        function displayProducts(productsToShow, category) {
+            const container = document.getElementById('products-container');
+            
+            container.innerHTML = `
+                <h3 class="text-3xl font-bold text-white mb-6 text-center">${category.emoji} ${category.name}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${productsToShow.map(product => {
+                        const rating = getProductRating(product.id);
+                        const visibleRatings = ratings.filter(r => r.productId === product.id && !r.hidden);
+                        
+                        return `
+                            <div class="product-card rounded-2xl p-6 text-white cursor-pointer hover:scale-105 transition-transform" onclick="showProductDetail(${product.id})">
+                                <div class="mb-4 text-center">
+                                    ${product.isEmoji ? 
+                                        `<div class="text-8xl mb-2">${product.image}</div>` :
+                                        `<img src="${product.image}" alt="${product.name}" class="w-32 h-32 mx-auto rounded-lg object-cover shadow-lg">`
+                                    }
+                                </div>
+                                <h4 class="text-xl font-bold mb-2 text-center">${product.name}</h4>
+                                <p class="text-purple-200 mb-4 text-center text-sm">${product.description.length > 80 ? product.description.substring(0, 80) + '...' : product.description}</p>
+                                
+                                ${rating.count > 0 ? `
+                                    <div class="mb-3">
+                                        <div class="flex items-center justify-center space-x-1 mb-1">
+                                            ${Array.from({length: 5}, (_, i) => 
+                                                `<span class="text-lg ${i < Math.round(rating.average) ? 'text-yellow-400' : 'text-gray-400'}">⭐</span>`
+                                            ).join('')}
+                                        </div>
+                                        <p class="text-xs text-center text-purple-200">${rating.average}/5 (${rating.count} calificaciones)</p>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-2xl font-bold text-pink-300">${formatPrice(product.price)}</span>
+                                    <button onclick="event.stopPropagation(); addToCart(${product.id})" class="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-full text-sm font-semibold transition-colors">
+                                        🛒 Agregar
+                                    </button>
+                                </div>
+                                
+                                <div class="flex justify-center items-center space-x-2">
+                                    ${(() => {
+                                        const userRating = userRatings.find(ur => ur.productId === product.id);
+                                        if (userRating) {
+                                            return `
+                                                <button onclick="event.stopPropagation(); editUserRating(${product.id})" class="bg-green-500 hover:bg-green-600 px-3 py-1 rounded-full text-xs font-semibold">
+                                                    ✏️ Mi Reseña
+                                                </button>
+                                                <button onclick="event.stopPropagation(); deleteUserRating(${product.id})" class="bg-red-500 hover:bg-red-600 px-2 py-1 rounded-full text-xs font-semibold">
+                                                    🗑️
+                                                </button>
+                                            `;
+                                        } else {
+                                            return `
+                                                <button onclick="event.stopPropagation(); openRatingModal(${product.id})" class="bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded-full text-xs font-semibold">
+                                                    ⭐ Calificar
+                                                </button>
+                                            `;
+                                        }
+                                    })()}
+                                    <button onclick="event.stopPropagation(); showProductDetail(${product.id})" class="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded-full text-xs font-semibold">
+                                        👁️ Ver Detalle
+                                    </button>
+                                </div>
+                                
+                                ${visibleRatings.length > 0 ? `
+                                    <div class="mt-3 max-h-20 overflow-y-auto">
+                                        ${visibleRatings.slice(-2).map(review => `
+                                            <div class="text-xs bg-white bg-opacity-20 rounded p-2 mb-2">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <div class="flex items-center space-x-1">
+                                                        ${Array.from({length: 5}, (_, i) => 
+                                                            `<span class="${i < review.rating ? 'text-yellow-400' : 'text-gray-400'}">⭐</span>`
+                                                        ).join('')}
+                                                    </div>
+                                                    <span class="text-pink-200 font-semibold">${review.customerName || 'Cliente'}</span>
+                                                </div>
+                                                ${review.comment ? `<p>"${review.comment.length > 40 ? review.comment.substring(0, 40) + '...' : review.comment}"</p>` : ''}
+                                                <p class="text-xs text-gray-300 mt-1">${review.date}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function showProductDetail(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const rating = getProductRating(productId);
+            const visibleRatings = ratings.filter(r => r.productId === productId && !r.hidden);
+            const category = categories.find(cat => cat.id === product.category);
+
+            const content = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="text-center">
+                        ${product.isEmoji ? 
+                            `<div class="text-9xl mb-4">${product.image}</div>` :
+                            `<img src="${product.image}" alt="${product.name}" class="w-full max-w-sm mx-auto rounded-lg object-cover shadow-lg">`
+                        }
+                    </div>
+                    <div>
+                        <h4 class="text-2xl font-bold mb-2">${product.name}</h4>
+                        <p class="text-gray-600 mb-4">${product.description}</p>
+                        <p class="text-3xl font-bold text-pink-600 mb-4">${formatPrice(product.price)}</p>
+                        
+                        ${category ? `<p class="text-sm text-gray-500 mb-4">Categoría: ${category.emoji} ${category.name}</p>` : ''}
+                        
+                        ${rating.count > 0 ? `
+                            <div class="mb-4">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <div class="flex">
+                                        ${Array.from({length: 5}, (_, i) => 
+                                            `<span class="text-xl ${i < Math.round(rating.average) ? 'text-yellow-400' : 'text-gray-300'}">⭐</span>`
+                                        ).join('')}
+                                    </div>
+                                    <span class="text-lg font-semibold">${rating.average}/5</span>
+                                    <span class="text-gray-600">(${rating.count} calificaciones)</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex gap-3 mb-4">
+                            <button onclick="addToCart(${product.id})" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-lg font-semibold">
+                                🛒 Agregar al Carrito
+                            </button>
+                            ${(() => {
+                                const userRating = userRatings.find(ur => ur.productId === product.id);
+                                if (userRating) {
+                                    return `
+                                        <button onclick="editUserRating(${product.id})" class="bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg font-semibold">
+                                            ✏️ Editar Mi Reseña
+                                        </button>
+                                        <button onclick="deleteUserRating(${product.id})" class="bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-semibold">
+                                            🗑️ Eliminar
+                                        </button>
+                                    `;
+                                } else {
+                                    return `
+                                        <button onclick="openRatingModal(${product.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-lg font-semibold">
+                                            ⭐ Calificar
+                                        </button>
+                                    `;
+                                }
+                            })()}
+                        </div>
+                    </div>
+                </div>
+                
+                ${visibleRatings.length > 0 ? `
+                    <div class="mt-6 border-t pt-6">
+                        <h5 class="text-lg font-bold mb-4">💬 Reseñas de Clientes (${visibleRatings.length})</h5>
+                        <div class="space-y-3 max-h-64 overflow-y-auto">
+                            ${visibleRatings.map(review => {
+                                const isUserReview = userRatings.find(ur => ur.id === review.id);
+                                return `
+                                    <div class="bg-gray-50 rounded-lg p-3 ${isUserReview ? 'border-2 border-green-300 bg-green-50' : ''}">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="flex items-center space-x-1">
+                                                ${Array.from({length: 5}, (_, i) => 
+                                                    `<span class="text-sm ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}">⭐</span>`
+                                                ).join('')}
+                                                <span class="text-xs text-gray-500 ml-2">${review.date}</span>
+                                                <span class="text-xs font-semibold text-blue-600 ml-2">👤 ${review.customerName || 'Cliente'}</span>
+                                                ${isUserReview ? '<span class="text-xs bg-green-500 text-white px-2 py-1 rounded-full ml-2">Mi reseña</span>' : ''}
+                                            </div>
+                                            ${isUserReview ? `
+                                                <div class="flex space-x-1">
+                                                    <button onclick="editUserRating(${product.id})" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded">
+                                                        ✏️ Editar
+                                                    </button>
+                                                    <button onclick="deleteUserRating(${product.id})" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                        ${review.comment ? `<p class="text-gray-700 text-sm">"${review.comment}"</p>` : '<p class="text-gray-500 text-sm italic">Sin comentario</p>'}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            document.getElementById('product-detail-content').innerHTML = content;
+            document.getElementById('product-detail-modal').classList.remove('hidden');
+            document.getElementById('product-detail-modal').classList.add('flex');
+        }
+
+        function closeProductDetail() {
+            document.getElementById('product-detail-modal').classList.add('hidden');
+            document.getElementById('product-detail-modal').classList.remove('flex');
+        }
+
+        function loadProducts() {
+            if (categories.length > 0) {
+                showCategory(categories[0].id);
+            }
+        }
+
+        // Cart functions
+        function addToCart(productId) {
+            const product = products.find(p => p.id === parseInt(productId));
+            if (!product) {
+                showMessage('❌ Producto no encontrado', 'error');
+                return;
+            }
+            
+            const existingItem = cart.find(item => item.id === parseInt(productId));
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({...product, quantity: 1});
+            }
+            saveCart();
+            updateCartDisplay();
+            showMessage(`✅ ${product.name} agregado al carrito`, 'success');
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            saveCart();
+            updateCartDisplay();
+        }
+
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    saveCart();
+                    updateCartDisplay();
+                }
+            }
+        }
+
+        function toggleCart() {
+            const modal = document.getElementById('cart-modal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                updateCartDisplay();
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function updateCartDisplay() {
+            const cartCount = document.getElementById('cart-count');
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            cartCount.textContent = totalItems;
+            cartTotal.textContent = totalPrice.toLocaleString('es-CO', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-500 text-center py-4">Tu carrito está vacío</p>';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item flex items-center justify-between p-3 border-b border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-2xl">${item.isEmoji ? item.image : '📷'}</div>
+                            <div>
+                                <h4 class="font-semibold text-sm">${item.name}</h4>
+                                <p class="text-pink-600 font-bold">${formatPrice(item.price)}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="updateQuantity(${item.id}, -1)" class="bg-gray-300 hover:bg-gray-400 text-gray-700 w-8 h-8 rounded-full text-sm">-</button>
+                            <span class="font-semibold">${item.quantity}</span>
+                            <button onclick="updateQuantity(${item.id}, 1)" class="bg-pink-500 hover:bg-pink-600 text-white w-8 h-8 rounded-full text-sm">+</button>
+                            <button onclick="removeFromCart(${item.id})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs ml-2">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function sendWhatsAppOrder() {
+            if (cart.length === 0) {
+                showMessage('❌ Tu carrito está vacío', 'error');
+                return;
+            }
+
+            const paymentMethod = document.getElementById('payment-method').value;
+            const paymentMethods = {
+                'transferencia': '🏦 Transferencia Bancaria',
+                'efectivo': '💵 Efectivo (Contraentrega - Solo Cali)',
+                'datafono': '💳 Datáfono Bold',
+                'link-pago': '🔗 Link de Pago Bold'
+            };
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            let message = `🛒 NUEVO PEDIDO - LA MORENA SMOKE SHOP\n\n`;
+            message += `📋 PRODUCTOS:\n`;
+            
+            cart.forEach(item => {
+                message += `• ${item.name}\n`;
+                message += `  Cantidad: ${item.quantity}\n`;
+                message += `  Precio unitario: ${formatPrice(item.price)}\n`;
+                message += `  Subtotal: ${formatPrice(item.price * item.quantity)}\n\n`;
+            });
+            
+            message += `💰 TOTAL: ${formatPrice(total)}\n\n`;
+            message += `💳 Método de pago preferido: ${paymentMethods[paymentMethod]}\n\n`;
+            message += `📱 Enviado desde: La Morena Smoke Shop - Catálogo Digital`;
+
+            // Crear URL de WhatsApp más compatible
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/573150646191?text=${encodedMessage}`;
+            
+            // Intentar abrir WhatsApp con diferentes métodos para mayor compatibilidad
+            try {
+                window.open(whatsappUrl, '_blank');
+                showMessage('✅ Pedido enviado por WhatsApp', 'success');
+            } catch (error) {
+                // Fallback: copiar mensaje al portapapeles
+                navigator.clipboard.writeText(message).then(() => {
+                    showMessage('📋 Mensaje copiado. Pégalo en WhatsApp: +57 315 064-6191', 'info');
+                }).catch(() => {
+                    showMessage('❌ Error al abrir WhatsApp. Contacta: +57 315 064-6191', 'error');
+                });
+            }
+        }
+
+        function openWhatsAppSupport() {
+            const message = encodeURIComponent('¡Hola! Tengo una consulta sobre los productos de La Morena Smoke Shop 🌟');
+            const whatsappUrl = `https://wa.me/573150646191?text=${message}`;
+            
+            try {
+                window.open(whatsappUrl, '_blank');
+            } catch (error) {
+                // Fallback si no puede abrir WhatsApp
+                showMessage('📱 Contacta por WhatsApp: +57 315 064-6191', 'info');
+            }
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLogoDisplay();
+            loadCategories();
+            loadProducts();
+            updateCartDisplay();
+            
+            // Add event listeners for category preview
+            const nameInput = document.getElementById('edit-category-name');
+            const emojiInput = document.getElementById('edit-category-emoji');
+            
+            if (nameInput) {
+                nameInput.addEventListener('input', updateCategoryPreview);
+            }
+            if (emojiInput) {
+                emojiInput.addEventListener('input', updateCategoryPreview);
+            }
+
+            // Add event listeners for logo preview
+            const logoMainInput = document.getElementById('logo-main-text');
+            const logoSubInput = document.getElementById('logo-sub-text');
+            const logoImageInput = document.getElementById('logo-image');
+            
+            if (logoMainInput) {
+                logoMainInput.addEventListener('input', updateLogoPreview);
+            }
+            if (logoSubInput) {
+                logoSubInput.addEventListener('input', updateLogoPreview);
+            }
+            if (logoImageInput) {
+                logoImageInput.addEventListener('change', updateLogoPreview);
+            }
+            
+            // Close modals when clicking outside
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    e.target.classList.add('hidden');
+                    e.target.classList.remove('flex');
+                }
+            });
+
+            // Add keyboard support for modals
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const modals = document.querySelectorAll('.modal');
+                    modals.forEach(modal => {
+                        if (!modal.classList.contains('hidden')) {
+                            modal.classList.add('hidden');
+                            modal.classList.remove('flex');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9761c7db3335f7b0',t:'MTc1NjM2Mjg0My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
