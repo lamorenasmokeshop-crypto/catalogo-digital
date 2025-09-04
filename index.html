@@ -3355,5 +3355,105 @@
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9761c7db3335f7b0',t:'MTc1NjM2Mjg0My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9761c7db3335f7b0',t:'MTc1NjM2Mjg0My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>
+(() => {
+  // 1) Verificaciones básicas
+  if (!window.db || !window.firebaseModules) {
+    console.error('Firebase no está listo (window.db / window.firebaseModules no encontrados). Revisa el <script type="module"> de Firebase.');
+    return;
+  }
+
+  const { collection, onSnapshot } = window.firebaseModules;
+  const db = window.db;
+
+  const contenedor = document.getElementById('lista-productos');
+  if (!contenedor) {
+    console.warn('No existe un elemento con id="lista-productos". Añádelo al HTML (ver Paso 1).');
+    return;
+  }
+
+  // Mensaje de carga inicial
+  contenedor.innerHTML = '<div class="w-full text-center py-8">Cargando catálogo…</div>';
+
+  // 2) Referencia a la colección (cámbiala si tu colección se llama distinto)
+  const productosRef = collection(db, 'productos');
+
+  // 3) Escucha en tiempo real y renderiza
+  onSnapshot(
+    productosRef,
+    (snapshot) => {
+      // Re-render completo en cada cambio (simple y seguro para empezar)
+      const frag = document.createDocumentFragment();
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() || {};
+        const nombre = data.nombre || 'Producto sin nombre';
+        const descripcion = data.descripcion || '';
+        const imagen = data.imagen || data.image || '';
+        const disponible = data.disponible === false ? false : true;
+
+        const precioNum = typeof data.precio === 'number'
+          ? data.precio
+          : parseFloat(data.precio);
+        const precio = isNaN(precioNum)
+          ? ''
+          : precioNum.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+        // Card
+        const card = document.createElement('article');
+        card.className = 'bg-white rounded-2xl shadow p-4 flex flex-col gap-3';
+
+        // Imagen
+        const img = document.createElement('img');
+        img.alt = nombre;
+        img.className = 'w-full h-40 object-cover rounded-xl';
+        img.src = imagen || 'https://via.placeholder.com/400x300?text=Sin+imagen';
+
+        // Título
+        const title = document.createElement('h3');
+        title.className = 'font-semibold text-lg';
+        title.textContent = nombre;
+
+        // Descripción (opcional)
+        if (descripcion) {
+          const desc = document.createElement('p');
+          desc.className = 'text-sm text-gray-600';
+          desc.textContent = descripcion;
+          card.appendChild(desc);
+        }
+
+        // Precio (opcional)
+        if (precio) {
+          const price = document.createElement('p');
+          price.className = 'text-base font-bold';
+          price.textContent = precio;
+          card.appendChild(price);
+        }
+
+        // Badge de disponibilidad
+        const badge = document.createElement('span');
+        badge.className = 'inline-block text-xs px-2 py-1 rounded-full ' + (disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+        badge.textContent = disponible ? 'Disponible' : 'Agotado';
+
+        // Ensamblar
+        card.prepend(title);         // título arriba
+        card.prepend(img);           // imagen al inicio
+        card.appendChild(badge);     // badge al final
+
+        frag.appendChild(card);
+      });
+
+      // Reemplaza el contenido por la nueva lista
+      contenedor.innerHTML = '';
+      contenedor.appendChild(frag);
+    },
+    (error) => {
+      contenedor.innerHTML = '<div class="text-red-600">Error cargando catálogo: ' + error.message + '</div>';
+      console.error('onSnapshot error:', error);
+    }
+  );
+})();
+</script>
+</body>
 </html>
