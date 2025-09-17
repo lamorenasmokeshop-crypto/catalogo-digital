@@ -700,6 +700,2268 @@
         </svg>
     </a>
 
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTvbfja10zslSYlbStYPpWLGrBygGeoPw",
+            authDomain: "lamorenasmokeshop-digitall.firebaseapp.com",
+            projectId: "lamorenasmokeshop-digitall",
+            storageBucket: "lamorenasmokeshop-digitall.firebasestorage.app",
+            messagingSenderId: "356055096822",
+            appId: "1:356055096822:web:577ca36747e8b8c61a7bd7",
+            measurementId: "G-GKVH9J667F"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const analytics = getAnalytics(app);
+
+        // Variables globales
+        let cart = [];
+        let products = [];
+        let customers = [];
+        let blogPosts = [];
+        let paymentMethods = [];
+        let categories = [];
+        let isAdminLoggedIn = false;
+        let currentSection = 'home';
+        let settings = {};
+
+        // Real-time listeners
+        let unsubscribeProducts, unsubscribeCategories, unsubscribeBlog, unsubscribePayments, unsubscribeCustomers, unsubscribeSettings;
+
+        // Firebase Functions
+        async function uploadImageToStorage(file, path) {
+            try {
+                const storageRef = ref(storage, path);
+                const snapshot = await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                return downloadURL;
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                throw error;
+            }
+        }
+
+        async function deleteImageFromStorage(url) {
+            try {
+                if (url && url.includes('firebasestorage.googleapis.com')) {
+                    const storageRef = ref(storage, url);
+                    await deleteObject(storageRef);
+                }
+            } catch (error) {
+                console.error('Error deleting image:', error);
+            }
+        }
+
+        // Initialize real-time listeners
+        function initializeFirebaseListeners() {
+            // Products listener
+            unsubscribeProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+                products = [];
+                snapshot.forEach((doc) => {
+                    products.push({ id: doc.id, ...doc.data() });
+                });
+                refreshCurrentSection();
+                if (isAdminLoggedIn) {
+                    loadAdminProducts();
+                }
+            });
+
+            // Categories listener
+            unsubscribeCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+                categories = [];
+                snapshot.forEach((doc) => {
+                    categories.push({ id: doc.id, ...doc.data() });
+                });
+                updateCategorySelectors();
+                if (isAdminLoggedIn) {
+                    loadAdminCategories();
+                }
+            });
+
+            // Blog listener
+            unsubscribeBlog = onSnapshot(collection(db, 'blog'), (snapshot) => {
+                blogPosts = [];
+                snapshot.forEach((doc) => {
+                    blogPosts.push({ id: doc.id, ...doc.data() });
+                });
+                if (currentSection === 'blog') {
+                    loadBlogPosts();
+                }
+                if (isAdminLoggedIn) {
+                    loadAdminBlog();
+                }
+            });
+
+            // Payment methods listener
+            unsubscribePayments = onSnapshot(collection(db, 'paymentMethods'), (snapshot) => {
+                paymentMethods = [];
+                snapshot.forEach((doc) => {
+                    paymentMethods.push({ id: doc.id, ...doc.data() });
+                });
+                loadPaymentMethods();
+                if (isAdminLoggedIn) {
+                    loadAdminPayments();
+                }
+            });
+
+            // Customers listener (admin only)
+            unsubscribeCustomers = onSnapshot(collection(db, 'customers'), (snapshot) => {
+                customers = [];
+                snapshot.forEach((doc) => {
+                    customers.push({ id: doc.id, ...doc.data() });
+                });
+                if (isAdminLoggedIn) {
+                    loadAdminCustomers();
+                }
+            });
+
+            // Settings listener
+            unsubscribeSettings = onSnapshot(doc(db, 'settings', 'general'), (doc) => {
+                if (doc.exists()) {
+                    settings = doc.data();
+                    applySettings();
+                }
+            });
+        }
+
+        // Apply settings from Firebase
+        function applySettings() {
+            if (settings.headerLogo) {
+                document.getElementById('logoContainer').innerHTML = `<img src="${settings.headerLogo}" alt="LA MORENA SMOKESHOP" class="w-full h-full object-contain rounded-full">`;
+            }
+            
+            if (settings.backgroundLogo) {
+                let overlay = document.getElementById('backgroundOverlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'backgroundOverlay';
+                    overlay.style.position = 'fixed';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.width = '100%';
+                    overlay.style.height = '100%';
+                    overlay.style.zIndex = '-1';
+                    overlay.style.pointerEvents = 'none';
+                    document.body.appendChild(overlay);
+                }
+                
+                overlay.style.backgroundImage = `url(${settings.backgroundLogo})`;
+                overlay.style.backgroundSize = 'cover';
+                overlay.style.backgroundPosition = 'center';
+                overlay.style.backgroundRepeat = 'no-repeat';
+                overlay.style.opacity = settings.backgroundOpacity || '0.3';
+                overlay.style.filter = 'blur(2px)';
+            }
+            
+            if (settings.whatsappNumber) {
+                window.currentWhatsAppNumber = settings.whatsappNumber;
+                // Update floating WhatsApp button
+                const floatingBtn = document.querySelector('.floating-whatsapp');
+                if (floatingBtn) {
+                    floatingBtn.href = `https://wa.me/${settings.whatsappNumber}`;
+                }
+            }
+        }
+
+        // Initialize sample data if collections are empty
+        async function initializeSampleData() {
+            try {
+                // Check if data exists
+                const productsSnapshot = await getDocs(collection(db, 'products'));
+                const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+                const paymentsSnapshot = await getDocs(collection(db, 'paymentMethods'));
+                
+                // Initialize categories if empty
+                if (categoriesSnapshot.empty) {
+                    const sampleCategories = [
+                        { key: 'papeles', name: 'Papeles, Cueros, Wraps y Tabaco', emoji: '📜', description: 'Papeles de fumar, wraps, cueros y tabaco premium' },
+                        { key: 'encendedores', name: 'Encendedores', emoji: '🔥', description: 'Encendedores de alta calidad y diseños únicos' },
+                        { key: 'pipas', name: 'Pipas', emoji: '🚬', description: 'Pipas artesanales y de colección' },
+                        { key: 'grinders', name: 'Grinders', emoji: '⚙️', description: 'Molinos y grinders de diferentes materiales' },
+                        { key: 'bongs', name: 'Bongs', emoji: '🌊', description: 'Bongs de cristal y materiales premium' },
+                        { key: 'bandejas', name: 'Bandejas', emoji: '📋', description: 'Bandejas para rolling y organización' },
+                        { key: 'electronicos', name: 'Dispositivos Electrónicos y Vapes', emoji: '💨', description: 'Vaporizadores y dispositivos electrónicos' },
+                        { key: 'vidrio', name: 'Vidrio', emoji: '🔮', description: 'Productos de vidrio artesanal' },
+                        { key: 'premium', name: 'Premium', emoji: '💎', description: 'Productos exclusivos de lujo' },
+                        { key: 'zona-rosa', name: 'Zona Rosa', emoji: '🌸', description: 'Productos con diseño femenino y elegante' }
+                    ];
+                    
+                    for (const category of sampleCategories) {
+                        await addDoc(collection(db, 'categories'), category);
+                    }
+                }
+                
+                // Initialize payment methods if empty
+                if (paymentsSnapshot.empty) {
+                    const samplePayments = [
+                        { name: 'Efectivo', emoji: '💵', description: 'Pago en efectivo contra entrega', active: true },
+                        { name: 'Transferencia Bancaria', emoji: '🏦', description: 'Transferencia a cuenta bancaria', active: true },
+                        { name: 'Link Datáfono Bold', emoji: '💳', description: 'Pago con tarjeta a través de Bold', active: true },
+                        { name: 'Nequi', emoji: '📱', description: 'Pago a través de Nequi', active: true },
+                        { name: 'Daviplata', emoji: '💰', description: 'Pago a través de Daviplata', active: true }
+                    ];
+                    
+                    for (const payment of samplePayments) {
+                        await addDoc(collection(db, 'paymentMethods'), payment);
+                    }
+                }
+                
+                // Initialize products if empty
+                if (productsSnapshot.empty) {
+                    const sampleProducts = [
+                        {
+                            name: 'Papel RAW Classic',
+                            price: 15000,
+                            category: 'papeles',
+                            description: 'Papeles RAW Classic fabricados con fibras naturales no refinadas.\n\nCaracterísticas principales:\n• Combustión lenta y uniforme\n• Sin blanqueadores químicos\n• Papel ultra fino de 13 GSM\n• Goma natural de acacia\n• Tamaño King Size\n• 32 hojas por librito\n\nLos papeles RAW son reconocidos mundialmente por su calidad superior y su compromiso con ingredientes naturales. Perfectos para una experiencia de fumado pura y auténtica.',
+                            emoji: '📜',
+                            image: null,
+                            visible: true
+                        },
+                        {
+                            name: 'Encendedor Clipper',
+                            price: 25000,
+                            category: 'encendedores',
+                            description: 'Encendedor Clipper original recargable con diseño icónico.\n\nCaracterísticas:\n• Recargable con gas butano\n• Piedra reemplazable\n• Válvula de seguridad redonda\n• Llama ajustable\n• Diseño ergonómico\n• Múltiples colores disponibles\n\nLos encendedores Clipper son famosos por su durabilidad y funcionalidad. Su diseño único permite usarlo como herramienta para compactar, convirtiéndolo en el compañero perfecto para cualquier fumador.',
+                            emoji: '🔥',
+                            image: null,
+                            visible: true
+                        },
+                        {
+                            name: 'Grinder Metálico Premium',
+                            price: 45000,
+                            category: 'grinders',
+                            description: 'Grinder de aleación de zinc de 4 piezas con sistema magnético.\n\nEspecificaciones:\n• Material: Aleación de zinc de alta calidad\n• 4 piezas con separación magnética\n• Dientes afilados de corte diamantado\n• Malla fina para polen\n• Diámetro: 63mm\n• Incluye raspador\n\nDiseño profesional que garantiza un molido uniforme y eficiente. La construcción robusta asegura años de uso confiable, mientras que el sistema magnético mantiene todas las piezas perfectamente alineadas.',
+                            emoji: '⚙️',
+                            image: null,
+                            visible: true
+                        },
+                        {
+                            name: 'Vape Pen Deluxe',
+                            price: 120000,
+                            category: 'electronicos',
+                            description: 'Vaporizador portátil de última generación con control de temperatura.\n\nCaracterísticas técnicas:\n• Batería de 2200mAh de larga duración\n• Control de temperatura variable (180°C - 220°C)\n• Cámara de cerámica pura\n• Calentamiento en 30 segundos\n• Pantalla LED digital\n• Carga USB-C rápida\n• Apagado automático de seguridad\n\nTecnología avanzada que ofrece vaporizaciones limpias y sabrosas. El control preciso de temperatura permite extraer los mejores sabores y efectos, mientras que la batería de alta capacidad garantiza sesiones prolongadas.',
+                            emoji: '💨',
+                            image: null,
+                            visible: true
+                        },
+                        {
+                            name: 'Bong Cristal Rosa',
+                            price: 85000,
+                            category: 'zona-rosa',
+                            description: 'Bong de cristal borosilicato con elegantes detalles en rosa.\n\nCaracterísticas especiales:\n• Cristal borosilicato de alta calidad\n• Detalles decorativos en rosa\n• Altura: 25cm\n• Base estable y amplia\n• Tubo difusor incluido\n• Fácil limpieza\n• Diseño femenino y elegante\n\nCombina funcionalidad superior con un diseño hermoso y femenino. El cristal borosilicato garantiza durabilidad y pureza en cada uso, mientras que los detalles rosados añaden un toque de elegancia único.',
+                            emoji: '🌸',
+                            image: null,
+                            visible: true
+                        },
+                        {
+                            name: 'Set Premium Gold',
+                            price: 250000,
+                            category: 'premium',
+                            description: 'Set completo de lujo con acabados dorados y estuche premium.\n\nIncluye:\n• Grinder dorado de 4 piezas (63mm)\n• Bandeja de rolling dorada\n• Encendedor Clipper edición oro\n• Papeles RAW Black King Size (5 libritos)\n• Tips de cartón premium\n• Herramientas de acero inoxidable\n• Estuche de cuero sintético\n\nColección exclusiva para los más exigentes. Cada pieza ha sido seleccionada por su calidad excepcional y diseño elegante. Los acabados dorados y el estuche premium hacen de este set el regalo perfecto o la adición ideal para cualquier colección.',
+                            emoji: '💎',
+                            image: null,
+                            visible: true
+                        }
+                    ];
+                    
+                    for (const product of sampleProducts) {
+                        await addDoc(collection(db, 'products'), product);
+                    }
+                }
+                
+                // Initialize sample blog posts
+                const blogSnapshot = await getDocs(collection(db, 'blog'));
+                if (blogSnapshot.empty) {
+                    const sampleBlog = [
+                        {
+                            title: 'Nuevas Tendencias en Vaping 2024',
+                            type: 'tendencia',
+                            content: 'Descubre las últimas innovaciones en el mundo del vapeo.\n\nEste año ha traído consigo increíbles avances tecnológicos que están revolucionando la experiencia de vapeo. Desde dispositivos más eficientes hasta nuevos sabores y tecnologías de calentamiento.\n\nLas principales tendencias incluyen:\n• Dispositivos con mayor duración de batería\n• Sistemas de control de temperatura más precisos\n• Nuevos materiales más seguros y duraderos\n• Diseños más ergonómicos y portátiles\n\n¡Mantente al día con todas las novedades en LA MORENA SMOKESHOP!',
+                            image: null,
+                            video: null,
+                            gallery: [],
+                            videos: [],
+                            date: new Date().toLocaleDateString()
+                        },
+                        {
+                            title: 'Evento Especial - Descuentos de Temporada',
+                            type: 'evento',
+                            content: 'No te pierdas nuestros descuentos especiales este mes.\n\n🎉 GRAN PROMOCIÓN DE TEMPORADA 🎉\n\nEstamos celebrando con increíbles descuentos en toda nuestra colección premium. Esta es tu oportunidad de conseguir los mejores productos a precios únicos.\n\nOfertas destacadas:\n• 20% de descuento en toda la línea de vapes\n• 2x1 en papeles seleccionados\n• Descuentos especiales en grinders premium\n• Envío gratis en compras superiores a $100.000\n\nLa promoción es válida hasta fin de mes. ¡No dejes pasar esta oportunidad!',
+                            image: null,
+                            video: null,
+                            gallery: [],
+                            videos: [],
+                            date: new Date().toLocaleDateString()
+                        }
+                    ];
+                    
+                    for (const post of sampleBlog) {
+                        await addDoc(collection(db, 'blog'), post);
+                    }
+                }
+                
+                // Initialize settings
+                const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
+                if (!settingsDoc.exists()) {
+                    await setDoc(doc(db, 'settings', 'general'), {
+                        whatsappNumber: '573150646191',
+                        businessEmail: '',
+                        businessAddress: '',
+                        headerLogo: null,
+                        backgroundLogo: null,
+                        backgroundOpacity: '0.3'
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error initializing sample data:', error);
+            }
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async function() {
+            initializeAgeVerification();
+            
+            // Initialize Firebase listeners
+            initializeFirebaseListeners();
+            
+            // Initialize sample data if needed
+            await initializeSampleData();
+            
+            showSection('home');
+            
+            // Inicializar slider de opacidad
+            const opacitySlider = document.getElementById('backgroundOpacity');
+            const opacityValue = document.getElementById('opacityValue');
+            if (opacitySlider && opacityValue) {
+                opacitySlider.addEventListener('input', function() {
+                    opacityValue.textContent = Math.round(this.value * 100) + '%';
+                });
+            }
+        });
+
+        // Verificación de edad
+        function initializeAgeVerification() {
+            const daySelect = document.getElementById('birthDay');
+            const monthSelect = document.getElementById('birthMonth');
+            const yearSelect = document.getElementById('birthYear');
+
+            // Llenar días
+            for (let i = 1; i <= 31; i++) {
+                daySelect.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+
+            // Llenar meses
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            months.forEach((month, index) => {
+                monthSelect.innerHTML += `<option value="${index + 1}">${month}</option>`;
+            });
+
+            // Llenar años
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear; i >= currentYear - 100; i--) {
+                yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+        }
+
+        function verifyAge() {
+            const day = parseInt(document.getElementById('birthDay').value);
+            const month = parseInt(document.getElementById('birthMonth').value);
+            const year = parseInt(document.getElementById('birthYear').value);
+
+            if (!day || !month || !year) {
+                alert('Por favor completa todos los campos de fecha');
+                return;
+            }
+
+            const birthDate = new Date(year, month - 1, day);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age >= 18) {
+                document.getElementById('ageVerification').style.display = 'none';
+            } else {
+                alert('Debes ser mayor de edad para acceder a este sitio');
+            }
+        }
+
+        // Navegación
+        function showSection(sectionName) {
+            // Ocultar todas las secciones
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // Mostrar la sección seleccionada
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            currentSection = sectionName;
+
+            // Actualizar navegación
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-purple-100', 'bg-pink-100');
+            });
+
+            // Cargar contenido específico
+            if (sectionName === 'catalog') {
+                loadProducts();
+            } else if (sectionName === 'premium') {
+                loadPremiumProducts();
+            } else if (sectionName === 'blog') {
+                loadBlogPosts();
+            } else if (sectionName === 'zona-rosa') {
+                loadZonaRosaProducts();
+            }
+        }
+
+        // Firebase CRUD operations for products
+        async function saveProductToFirebase(productData, isEditing = false, productId = null) {
+            try {
+                if (isEditing && productId) {
+                    await updateDoc(doc(db, 'products', productId), productData);
+                } else {
+                    await addDoc(collection(db, 'products'), productData);
+                }
+            } catch (error) {
+                console.error('Error saving product:', error);
+                throw error;
+            }
+        }
+
+        async function deleteProductFromFirebase(productId) {
+            try {
+                const productDoc = doc(db, 'products', productId);
+                const productData = await getDoc(productDoc);
+                
+                if (productData.exists() && productData.data().image) {
+                    await deleteImageFromStorage(productData.data().image);
+                }
+                
+                await deleteDoc(productDoc);
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                throw error;
+            }
+        }
+
+        async function toggleProductVisibilityInFirebase(productId) {
+            try {
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    await updateDoc(doc(db, 'products', productId), {
+                        visible: !product.visible
+                    });
+                }
+            } catch (error) {
+                console.error('Error toggling product visibility:', error);
+                throw error;
+            }
+        }
+
+        // Productos
+        function loadProducts() {
+            const grid = document.getElementById('productsGrid');
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            
+            let filteredProducts = products.filter(product => 
+                product.visible && (categoryFilter === '' || product.category === categoryFilter)
+            );
+
+            grid.innerHTML = filteredProducts.map(product => `
+                <div class="premium-card p-6 rounded-2xl hover:transform hover:scale-105 transition-all duration-300">
+                    <div class="text-center mb-4">
+                        ${product.image ? 
+                            `<img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover rounded-lg mb-4">` :
+                            `<div class="text-6xl mb-4">${product.emoji}</div>`
+                        }
+                        <h3 class="text-xl font-bold text-purple-800 mb-4">${product.name}</h3>
+                        <div class="text-2xl font-bold text-green-600 mb-4">
+                            $${product.price.toLocaleString('es-CO')}
+                        </div>
+                        <div class="space-y-2">
+                            <button onclick="viewProductDetails(${product.id})" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-semibold transition-all duration-200">
+                                Ver Detalles 👁️
+                            </button>
+                            <button onclick="addToCart(${product.id})" class="w-full gradient-btn text-white py-3 rounded-lg font-semibold hover:transform hover:scale-105 transition-all duration-200">
+                                Agregar al Carrito 🛒
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadPremiumProducts() {
+            const grid = document.getElementById('premiumProducts');
+            const premiumProducts = products.filter(product => product.category === 'premium' && product.visible);
+            
+            grid.innerHTML = premiumProducts.map(product => `
+                <div class="premium-card p-6 rounded-2xl hover:transform hover:scale-105 transition-all duration-300 border-2 border-yellow-400">
+                    <div class="text-center mb-4">
+                        ${product.image ? 
+                            `<img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover rounded-lg mb-4">` :
+                            `<div class="text-6xl mb-4">${product.emoji}</div>`
+                        }
+                        <div class="flex items-center justify-center mb-4">
+                            <span class="text-yellow-500 text-2xl">👑</span>
+                            <h3 class="text-xl font-bold text-purple-800 mx-2">${product.name}</h3>
+                            <span class="text-yellow-500 text-2xl">👑</span>
+                        </div>
+                        <div class="text-2xl font-bold text-green-600 mb-4">
+                            $${product.price.toLocaleString('es-CO')}
+                        </div>
+                        <div class="space-y-2">
+                            <button onclick="viewProductDetails(${product.id})" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-semibold transition-all duration-200">
+                                Ver Detalles 👁️
+                            </button>
+                            <button onclick="addToCart(${product.id})" class="w-full gradient-btn text-white py-3 rounded-lg font-semibold hover:transform hover:scale-105 transition-all duration-200">
+                                Agregar al Carrito 🛒
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadZonaRosaProducts() {
+            const grid = document.getElementById('zonaRosaProducts');
+            const zonaRosaProducts = products.filter(product => product.category === 'zona-rosa' && product.visible);
+            
+            grid.innerHTML = zonaRosaProducts.map(product => `
+                <div class="premium-card p-6 rounded-2xl hover:transform hover:scale-105 transition-all duration-300 border-2 border-pink-400">
+                    <div class="text-center mb-4">
+                        ${product.image ? 
+                            `<img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover rounded-lg mb-4">` :
+                            `<div class="text-6xl mb-4">${product.emoji}</div>`
+                        }
+                        <div class="flex items-center justify-center mb-4">
+                            <span class="text-pink-500 text-2xl">🌸</span>
+                            <h3 class="text-xl font-bold text-pink-600 mx-2">${product.name}</h3>
+                            <span class="text-pink-500 text-2xl">🌸</span>
+                        </div>
+                        <div class="text-2xl font-bold text-green-600 mb-4">
+                            $${product.price.toLocaleString('es-CO')}
+                        </div>
+                        <div class="space-y-2">
+                            <button onclick="viewProductDetails(${product.id})" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-semibold transition-all duration-200">
+                                Ver Detalles 👁️
+                            </button>
+                            <button onclick="addToCart(${product.id})" class="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white py-3 rounded-lg font-semibold hover:transform hover:scale-105 transition-all duration-200">
+                                Agregar al Carrito 🛒
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterProducts() {
+            loadProducts();
+        }
+
+        // Carrito
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({...product, quantity: 1});
+                }
+                updateCartCount();
+                
+                // Animación de confirmación
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '✅ Agregado';
+                button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '';
+                }, 1000);
+            }
+        }
+
+        // Save customer to Firebase
+        async function saveCustomerToFirebase(customerData) {
+            try {
+                await addDoc(collection(db, 'customers'), customerData);
+            } catch (error) {
+                console.error('Error saving customer:', error);
+                throw error;
+            }
+        }
+
+        function updateCartCount() {
+            const count = cart.reduce((total, item) => total + item.quantity, 0);
+            document.getElementById('cartCount').textContent = count;
+        }
+
+        function openCart() {
+            const modal = document.getElementById('cartModal');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-center text-gray-500 py-8">Tu carrito está vacío 🛒</p>';
+                cartTotal.textContent = '$0';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-2xl">${item.emoji}</div>
+                            <div>
+                                <h4 class="font-semibold text-purple-800">${item.name}</h4>
+                                <p class="text-gray-600">$${item.price.toLocaleString('es-CO')} c/u</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="updateQuantity(${item.id}, -1)" class="w-8 h-8 bg-red-500 text-white rounded-full hover:bg-red-600">-</button>
+                            <span class="font-semibold">${item.quantity}</span>
+                            <button onclick="updateQuantity(${item.id}, 1)" class="w-8 h-8 bg-green-500 text-white rounded-full hover:bg-green-600">+</button>
+                            <button onclick="removeFromCart(${item.id})" class="text-red-500 hover:text-red-700 ml-2">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                cartTotal.textContent = `$${total.toLocaleString('es-CO')}`;
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeCart() {
+            document.getElementById('cartModal').style.display = 'none';
+        }
+
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    openCart(); // Refresh cart display
+                    updateCartCount();
+                }
+            }
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            openCart(); // Refresh cart display
+            updateCartCount();
+        }
+
+        function proceedToCheckout() {
+            if (cart.length === 0) {
+                alert('Tu carrito está vacío');
+                return;
+            }
+            
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            if (!paymentMethod) {
+                alert('Por favor selecciona un método de pago');
+                return;
+            }
+            
+            closeCart();
+            document.getElementById('checkoutModal').style.display = 'block';
+        }
+
+        function closeCheckout() {
+            document.getElementById('checkoutModal').style.display = 'none';
+        }
+
+        async function sendToWhatsApp() {
+            const form = document.getElementById('checkoutForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const customerData = {
+                name: document.getElementById('customerName').value,
+                address: document.getElementById('customerAddress').value,
+                neighborhood: document.getElementById('customerNeighborhood').value,
+                phone: document.getElementById('customerPhone').value,
+                email: document.getElementById('customerEmail').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                items: cart,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                date: new Date().toLocaleString()
+            };
+
+            try {
+                // Guardar cliente en Firebase
+                await saveCustomerToFirebase(customerData);
+
+                // Crear mensaje para WhatsApp
+                let message = `🛒 *NUEVO PEDIDO - LA MORENA SMOKESHOP*\n\n`;
+                message += `👤 *Cliente:* ${customerData.name}\n`;
+                message += `📍 *Dirección:* ${customerData.address}, ${customerData.neighborhood}\n`;
+                message += `📱 *Teléfono:* ${customerData.phone}\n`;
+                message += `📧 *Email:* ${customerData.email}\n`;
+                message += `💳 *Método de pago:* ${customerData.paymentMethod}\n\n`;
+                message += `🛍️ *PRODUCTOS:*\n`;
+                
+                cart.forEach(item => {
+                    message += `• ${item.name} x${item.quantity} - $${(item.price * item.quantity).toLocaleString('es-CO')}\n`;
+                });
+                
+                message += `\n💰 *TOTAL: $${customerData.total.toLocaleString('es-CO')}*\n\n`;
+                message += `📅 *Fecha:* ${customerData.date}`;
+
+                const whatsappNumber = settings.whatsappNumber || '573150646191';
+                const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+
+                // Limpiar carrito y cerrar modal
+                cart = [];
+                updateCartCount();
+                closeCheckout();
+                alert('¡Pedido enviado! Te contactaremos pronto 😊');
+            } catch (error) {
+                console.error('Error saving customer:', error);
+                alert('Error al procesar el pedido. Por favor intenta nuevamente.');
+            }
+        }
+
+        // Checkout form submission
+        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendToWhatsApp();
+        });
+
+        // Blog
+        function loadBlogPosts() {
+            const grid = document.getElementById('blogPosts');
+            
+            grid.innerHTML = blogPosts.map(post => `
+                <div class="premium-card p-6 rounded-2xl hover:transform hover:scale-105 transition-all duration-300 cursor-pointer" onclick="openBlogDetail(${post.id})">
+                    ${post.image ? `<img src="${post.image}" alt="${post.title}" class="w-full h-48 object-cover rounded-lg mb-4">` : ''}
+                    ${post.video ? `<video src="${post.video}" class="w-full h-48 rounded-lg mb-4" muted></video>` : ''}
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                            ${post.type.charAt(0).toUpperCase() + post.type.slice(1)}
+                        </span>
+                        <span class="text-gray-500 text-sm">${post.date}</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-purple-800 mb-3">${post.title}</h3>
+                    <p class="text-gray-600 line-clamp-3">${post.content.substring(0, 150)}${post.content.length > 150 ? '...' : ''}</p>
+                    <div class="mt-4 text-purple-600 font-semibold hover:text-purple-800">
+                        Leer más →
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openBlogDetail(postId) {
+            const post = blogPosts.find(p => p.id === postId);
+            if (!post) return;
+
+            const modal = document.getElementById('blogDetailModal');
+            const content = document.getElementById('blogDetailContent');
+            
+            content.innerHTML = `
+                <div class="mb-6">
+                    ${post.image ? `<img src="${post.image}" alt="${post.title}" class="w-full h-64 object-cover rounded-lg mb-4">` : ''}
+                    ${post.video ? `<video src="${post.video}" controls class="w-full h-64 rounded-lg mb-4"></video>` : ''}
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-4 py-2 bg-purple-100 text-purple-800 rounded-full font-medium">
+                            ${post.type.charAt(0).toUpperCase() + post.type.slice(1)}
+                        </span>
+                        <span class="text-gray-500">${post.date}</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-purple-800 mb-4">${post.title}</h2>
+                    <div class="text-gray-700 leading-relaxed whitespace-pre-line">${post.content}</div>
+                    ${post.gallery && post.gallery.length > 0 ? `
+                        <div class="mt-6">
+                            <h4 class="text-lg font-semibold text-purple-800 mb-3">Galería de Imágenes</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                ${post.gallery.map(img => `
+                                    <img src="${img}" alt="Galería" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-80" onclick="openImageModal('${img}')">
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${post.videos && post.videos.length > 0 ? `
+                        <div class="mt-6">
+                            <h4 class="text-lg font-semibold text-purple-800 mb-3">Videos</h4>
+                            <div class="space-y-4">
+                                ${post.videos.map(video => `
+                                    <video src="${video}" controls class="w-full rounded-lg"></video>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeBlogDetail() {
+            document.getElementById('blogDetailModal').style.display = 'none';
+        }
+
+        function openImageModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImage');
+            img.src = imageSrc;
+            modal.style.display = 'block';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // Product Details Functions
+        function viewProductDetails(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const modal = document.getElementById('productDetailsModal');
+            const content = document.getElementById('productDetailsContent');
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="text-center">
+                        ${product.image ? 
+                            `<img src="${product.image}" alt="${product.name}" class="w-full max-w-md mx-auto h-64 object-cover rounded-lg mb-4 cursor-pointer" onclick="openImageModal('${product.image}')">` :
+                            `<div class="text-8xl mb-4">${product.emoji}</div>`
+                        }
+                        <div class="flex items-center justify-center mb-4">
+                            ${product.category === 'premium' ? 
+                                `<span class="text-yellow-500 text-2xl">👑</span>
+                                <h2 class="text-2xl font-bold text-purple-800 mx-2">${product.name}</h2>
+                                <span class="text-yellow-500 text-2xl">👑</span>` :
+                                product.category === 'zona-rosa' ?
+                                `<span class="text-pink-500 text-2xl">🌸</span>
+                                <h2 class="text-2xl font-bold text-pink-600 mx-2">${product.name}</h2>
+                                <span class="text-pink-500 text-2xl">🌸</span>` :
+                                `<h2 class="text-2xl font-bold text-purple-800">${product.name}</h2>`
+                            }
+                        </div>
+                        <div class="text-3xl font-bold text-green-600 mb-4">
+                            $${product.price.toLocaleString('es-CO')}
+                        </div>
+                        <div class="inline-block px-4 py-2 bg-purple-100 text-purple-800 rounded-full font-medium mb-4">
+                            Categoría: ${getCategoryName(product.category)}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <h3 class="text-lg font-bold text-purple-800 mb-3">📝 Descripción Detallada</h3>
+                        <p class="text-gray-700 leading-relaxed whitespace-pre-line">${product.description}</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg">
+                        <h3 class="text-lg font-bold text-purple-800 mb-3">✨ Características</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-500">✅</span>
+                                <span>Producto original y auténtico</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-500">✅</span>
+                                <span>Calidad premium garantizada</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-500">✅</span>
+                                <span>Envío seguro y discreto</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-500">✅</span>
+                                <span>Atención personalizada</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4">
+                        <button onclick="addToCart(${product.id}); closeProductDetails();" class="flex-1 gradient-btn text-white py-3 rounded-lg font-semibold hover:transform hover:scale-105 transition-all duration-200">
+                            🛒 Agregar al Carrito
+                        </button>
+                        <button onclick="shareProduct(${product.id})" class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-all duration-200">
+                            📱 Compartir
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeProductDetails() {
+            document.getElementById('productDetailsModal').style.display = 'none';
+        }
+
+        function getCategoryName(categoryKey) {
+            const categories = {
+                'papeles': 'Papeles, Cueros, Wraps y Tabaco',
+                'encendedores': 'Encendedores',
+                'pipas': 'Pipas',
+                'grinders': 'Grinders',
+                'bongs': 'Bongs',
+                'bandejas': 'Bandejas',
+                'electronicos': 'Dispositivos Electrónicos y Vapes',
+                'vidrio': 'Vidrio',
+                'premium': 'Premium',
+                'zona-rosa': 'Zona Rosa'
+            };
+            return categories[categoryKey] || categoryKey;
+        }
+
+        function shareProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const message = `🛍️ *${product.name}* - LA MORENA SMOKESHOP\n\n` +
+                          `💰 Precio: $${product.price.toLocaleString('es-CO')}\n` +
+                          `📝 ${product.description.substring(0, 200)}${product.description.length > 200 ? '...' : ''}\n\n` +
+                          `¡Pregunta por este producto! 💜`;
+
+            const whatsappUrl = `https://wa.me/573150646191?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+            
+            // Mostrar confirmación visual
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '✅ Compartido';
+            button.style.background = '#10b981';
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.background = '';
+            }, 2000);
+        }
+
+        // Admin Panel
+        function openAdmin() {
+            document.getElementById('adminLoginModal').style.display = 'block';
+        }
+
+        function closeAdminLogin() {
+            document.getElementById('adminLoginModal').style.display = 'none';
+            // Limpiar el campo de contraseña por seguridad
+            document.getElementById('adminPassword').value = '';
+        }
+
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const password = document.getElementById('adminPassword').value;
+            
+            if (password === 'Lamorena04191106') {
+                isAdminLoggedIn = true;
+                // Limpiar contraseña inmediatamente por seguridad
+                document.getElementById('adminPassword').value = '';
+                closeAdminLogin();
+                document.getElementById('adminPanel').style.display = 'block';
+                showAdminSection('products');
+            } else {
+                alert('Contraseña incorrecta');
+                // Limpiar contraseña también si es incorrecta
+                document.getElementById('adminPassword').value = '';
+            }
+        });
+
+        function closeAdmin() {
+            document.getElementById('adminPanel').style.display = 'none';
+            isAdminLoggedIn = false;
+            // Limpiar el campo de contraseña por seguridad
+            document.getElementById('adminPassword').value = '';
+        }
+
+        function showAdminSection(section) {
+            // Ocultar todas las secciones admin
+            document.querySelectorAll('.admin-section').forEach(sec => {
+                sec.classList.add('hidden');
+            });
+            
+            // Mostrar la sección seleccionada
+            document.getElementById('admin' + section.charAt(0).toUpperCase() + section.slice(1)).classList.remove('hidden');
+            
+            // Actualizar botones de navegación
+            document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+                btn.classList.remove('bg-purple-800');
+                btn.classList.add('bg-purple-600');
+            });
+            event.target.classList.remove('bg-purple-600');
+            event.target.classList.add('bg-purple-800');
+            
+            // Cargar contenido específico
+            if (section === 'products') {
+                loadAdminProducts();
+            } else if (section === 'categories') {
+                loadAdminCategories();
+            } else if (section === 'customers') {
+                loadAdminCustomers();
+            } else if (section === 'blog') {
+                loadAdminBlog();
+            } else if (section === 'payments') {
+                loadAdminPayments();
+            } else if (section === 'settings') {
+                loadAdminSettings();
+            }
+        }
+
+        function loadAdminProducts() {
+            const list = document.getElementById('adminProductsList');
+            
+            list.innerHTML = products.map(product => `
+                <div class="bg-gray-700 p-4 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl">${product.emoji}</div>
+                        <div>
+                            <h4 class="font-semibold">${product.name}</h4>
+                            <p class="text-gray-300">$${product.price.toLocaleString('es-CO')} - ${product.category}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editProduct(${product.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">✏️ Editar</button>
+                        <button onclick="toggleProductVisibility(${product.id})" class="px-3 py-1 ${product.visible ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'} rounded text-sm">
+                            ${product.visible ? '👁️ Ocultar' : '👁️‍🗨️ Mostrar'}
+                        </button>
+                        <button onclick="deleteProduct(${product.id})" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadAdminCustomers() {
+            const list = document.getElementById('adminCustomersList');
+            
+            if (customers.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400 py-8">No hay clientes registrados aún</p>';
+                return;
+            }
+            
+            list.innerHTML = customers.map((customer, index) => `
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold">${customer.name}</h4>
+                        <span class="text-gray-400 text-sm">${customer.date}</span>
+                    </div>
+                    <p class="text-gray-300 text-sm">📍 ${customer.address}, ${customer.neighborhood}</p>
+                    <p class="text-gray-300 text-sm">📱 ${customer.phone} | 📧 ${customer.email}</p>
+                    <p class="text-gray-300 text-sm">💳 ${customer.paymentMethod}</p>
+                    <p class="text-green-400 font-semibold">💰 Total: $${customer.total.toLocaleString('es-CO')}</p>
+                </div>
+            `).join('');
+        }
+
+        function loadAdminBlog() {
+            const list = document.getElementById('adminBlogList');
+            
+            list.innerHTML = blogPosts.map(post => `
+                <div class="bg-gray-700 p-4 rounded-lg flex items-center justify-between">
+                    <div>
+                        <h4 class="font-semibold">${post.title}</h4>
+                        <p class="text-gray-300 text-sm">${post.type} - ${post.date}</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editBlogPost(${post.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">✏️ Editar</button>
+                        <button onclick="deleteBlogPost(${post.id})" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddProduct() {
+            document.getElementById('addProductModal').style.display = 'block';
+        }
+
+        function closeAddProduct() {
+            document.getElementById('addProductModal').style.display = 'none';
+            document.getElementById('addProductForm').reset();
+            
+            // Reset form to add mode
+            delete document.getElementById('addProductForm').dataset.editingId;
+            document.querySelector('#addProductModal h3').textContent = '➕ Agregar Producto';
+            document.querySelector('#addProductForm button[type="submit"]').textContent = 'Agregar Producto ✨';
+        }
+
+        function showAddBlogPost() {
+            document.getElementById('addBlogModal').style.display = 'block';
+        }
+
+        function closeAddBlog() {
+            document.getElementById('addBlogModal').style.display = 'none';
+            document.getElementById('addBlogForm').reset();
+            
+            // Reset form to add mode
+            delete document.getElementById('addBlogForm').dataset.editingId;
+            document.querySelector('#addBlogModal h3').textContent = '📝 Nuevo Post';
+            document.querySelector('#addBlogForm button[type="submit"]').textContent = 'Publicar Post ✨';
+            
+            // Reset previews
+            document.getElementById('blogImagePreview').classList.add('hidden');
+            document.getElementById('blogVideoPreview').classList.add('hidden');
+            document.getElementById('galleryPreview').classList.add('hidden');
+            document.getElementById('videosPreview').classList.add('hidden');
+        }
+
+        // Preview functions for blog form
+        document.getElementById('blogImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('blogImagePreviewImg').src = e.target.result;
+                    document.getElementById('blogImagePreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('blogVideo').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('blogVideoPreviewVid').src = e.target.result;
+                    document.getElementById('blogVideoPreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('blogGallery').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            const preview = document.getElementById('galleryPreview');
+            
+            if (files.length > 0) {
+                preview.innerHTML = '';
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'w-full h-24 object-cover rounded-lg';
+                        img.alt = `Galería ${index + 1}`;
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                preview.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('blogVideos').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            const preview = document.getElementById('videosPreview');
+            
+            if (files.length > 0) {
+                preview.innerHTML = '';
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const video = document.createElement('video');
+                        video.src = e.target.result;
+                        video.className = 'w-full h-32 rounded-lg';
+                        video.controls = true;
+                        preview.appendChild(video);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                preview.classList.remove('hidden');
+            }
+        });
+
+        // Form submissions
+        document.getElementById('addProductForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const editingId = this.dataset.editingId;
+            const isEditing = !!editingId;
+            
+            const productData = {
+                name: document.getElementById('productName').value,
+                price: parseInt(document.getElementById('productPrice').value),
+                category: document.getElementById('productCategory').value,
+                description: document.getElementById('productDescription').value,
+                emoji: document.getElementById('productEmoji').value || '📦',
+                image: null,
+                visible: true
+            };
+            
+            // Handle image upload
+            const imageFile = document.getElementById('productImage').files[0];
+            
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('#addProductForm button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '⏳ Guardando...';
+                submitBtn.disabled = true;
+                
+                if (imageFile) {
+                    // Upload image to Firebase Storage
+                    const imagePath = `products/${Date.now()}_${imageFile.name}`;
+                    productData.image = await uploadImageToStorage(imageFile, imagePath);
+                } else if (isEditing) {
+                    // Keep existing image if no new image uploaded
+                    const existingProduct = products.find(p => p.id === editingId);
+                    if (existingProduct) {
+                        productData.image = existingProduct.image;
+                    }
+                }
+                
+                // Save to Firebase
+                await saveProductToFirebase(productData, isEditing, editingId);
+                
+                // Reset form
+                delete document.getElementById('addProductForm').dataset.editingId;
+                document.querySelector('#addProductModal h3').textContent = '➕ Agregar Producto';
+                submitBtn.textContent = 'Agregar Producto ✨';
+                
+                closeAddProduct();
+                alert(isEditing ? '✅ Producto actualizado correctamente' : '✅ Producto agregado correctamente');
+                
+            } catch (error) {
+                console.error('Error saving product:', error);
+                alert('❌ Error al guardar el producto. Por favor intenta nuevamente.');
+            } finally {
+                // Restore button state
+                const submitBtn = document.querySelector('#addProductForm button[type="submit"]');
+                submitBtn.disabled = false;
+                if (!isEditing) {
+                    submitBtn.textContent = 'Agregar Producto ✨';
+                } else {
+                    submitBtn.textContent = 'Actualizar Producto ✨';
+                }
+            }
+        });
+
+        document.getElementById('addBlogForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const editingId = this.dataset.editingId;
+            const isEditing = !!editingId;
+            
+            const postData = {
+                title: document.getElementById('blogTitle').value,
+                type: document.getElementById('blogType').value,
+                content: document.getElementById('blogContent').value,
+                image: null,
+                video: null,
+                gallery: [],
+                videos: [],
+                date: isEditing ? blogPosts.find(p => p.id === editingId)?.date : new Date().toLocaleDateString()
+            };
+            
+            // Handle all file uploads
+            const imageFile = document.getElementById('blogImage').files[0];
+            const videoFile = document.getElementById('blogVideo').files[0];
+            const galleryFiles = Array.from(document.getElementById('blogGallery').files);
+            const videoFiles = Array.from(document.getElementById('blogVideos').files);
+            
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('#addBlogForm button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '⏳ Guardando...';
+                submitBtn.disabled = true;
+                
+                // If editing, preserve existing media if no new files uploaded
+                if (isEditing) {
+                    const existingPost = blogPosts.find(p => p.id === editingId);
+                    if (existingPost) {
+                        postData.image = existingPost.image;
+                        postData.video = existingPost.video;
+                        postData.gallery = [...existingPost.gallery];
+                        postData.videos = [...existingPost.videos];
+                    }
+                }
+                
+                // Upload main image
+                if (imageFile) {
+                    const imagePath = `blog/${Date.now()}_${imageFile.name}`;
+                    postData.image = await uploadImageToStorage(imageFile, imagePath);
+                }
+                
+                // Upload main video
+                if (videoFile) {
+                    const videoPath = `blog/videos/${Date.now()}_${videoFile.name}`;
+                    postData.video = await uploadImageToStorage(videoFile, videoPath);
+                }
+                
+                // Upload gallery images (replace existing if new files uploaded)
+                if (galleryFiles.length > 0) {
+                    postData.gallery = [];
+                    for (const file of galleryFiles) {
+                        const imagePath = `blog/gallery/${Date.now()}_${file.name}`;
+                        const imageUrl = await uploadImageToStorage(file, imagePath);
+                        postData.gallery.push(imageUrl);
+                    }
+                }
+                
+                // Upload additional videos (replace existing if new files uploaded)
+                if (videoFiles.length > 0) {
+                    postData.videos = [];
+                    for (const file of videoFiles) {
+                        const videoPath = `blog/videos/${Date.now()}_${file.name}`;
+                        const videoUrl = await uploadImageToStorage(file, videoPath);
+                        postData.videos.push(videoUrl);
+                    }
+                }
+                
+                // Save to Firebase
+                await saveBlogPostToFirebase(postData, isEditing, editingId);
+                
+                // Reset form
+                delete document.getElementById('addBlogForm').dataset.editingId;
+                document.querySelector('#addBlogModal h3').textContent = '📝 Nuevo Post';
+                submitBtn.textContent = 'Publicar Post ✨';
+                
+                closeAddBlog();
+                alert(isEditing ? '✅ Post actualizado correctamente' : '✅ Post publicado correctamente');
+                
+            } catch (error) {
+                console.error('Error saving blog post:', error);
+                alert('❌ Error al guardar el post. Por favor intenta nuevamente.');
+            } finally {
+                // Restore button state
+                const submitBtn = document.querySelector('#addBlogForm button[type="submit"]');
+                submitBtn.disabled = false;
+                if (!isEditing) {
+                    submitBtn.textContent = 'Publicar Post ✨';
+                } else {
+                    submitBtn.textContent = 'Actualizar Post ✨';
+                }
+            }
+        });
+
+        // Product management functions
+        async function toggleProductVisibility(productId) {
+            try {
+                await toggleProductVisibilityInFirebase(productId);
+            } catch (error) {
+                console.error('Error toggling product visibility:', error);
+                alert('❌ Error al cambiar la visibilidad del producto');
+            }
+        }
+
+        // Confirmation modal functions
+        function showConfirmModal(title, message, onConfirm) {
+            // Remove any existing confirmation modals
+            closeConfirmModal();
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'confirmationModal';
+            modal.style.display = 'block';
+            modal.style.zIndex = '9999999';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.95)';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.innerHTML = `
+                <div class="modal-content max-w-md" style="margin: 15vh auto; box-shadow: 0 25px 50px rgba(0,0,0,0.8); border: 3px solid #ef4444; background: white; position: relative; z-index: 10000000;">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-4">⚠️</div>
+                        <h3 class="text-2xl font-bold text-red-600 mb-4">${title}</h3>
+                        <p class="text-gray-700 mb-6 text-lg leading-relaxed">${message}</p>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button onclick="closeConfirmModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105">
+                            ❌ Cancelar
+                        </button>
+                        <button onclick="confirmAction()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105">
+                            ✅ Confirmar
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Store the confirmation action
+            window.confirmAction = function() {
+                onConfirm();
+                closeConfirmModal();
+            };
+            
+            // Prevent background scrolling
+            document.body.style.overflow = 'hidden';
+            
+            // Focus on the modal and bring to front
+            modal.focus();
+            modal.scrollIntoView();
+        }
+
+        function closeConfirmModal() {
+            const existingModal = document.getElementById('confirmationModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Restore background scrolling
+            document.body.style.overflow = '';
+            
+            // Clean up the global function
+            if (window.confirmAction) {
+                delete window.confirmAction;
+            }
+        }
+
+        // Product management functions
+        function editProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            // Fill form with existing data
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productEmoji').value = product.emoji;
+            
+            // Change form title and button
+            document.querySelector('#addProductModal h3').textContent = '✏️ Editar Producto';
+            document.querySelector('#addProductForm button[type="submit"]').textContent = 'Actualizar Producto ✨';
+            
+            // Store editing product ID
+            document.getElementById('addProductForm').dataset.editingId = productId;
+            
+            document.getElementById('addProductModal').style.display = 'block';
+        }
+
+        function deleteProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            showConfirmModal(
+                '🗑️ Eliminar Producto',
+                `¿Estás seguro de que quieres eliminar "${product.name}"? Esta acción no se puede deshacer.`,
+                async function() {
+                    try {
+                        await deleteProductFromFirebase(productId);
+                        alert('✅ Producto eliminado correctamente');
+                    } catch (error) {
+                        console.error('Error deleting product:', error);
+                        alert('❌ Error al eliminar el producto');
+                    }
+                }
+            );
+        }
+
+        // Firebase CRUD operations for blog
+        async function saveBlogPostToFirebase(postData, isEditing = false, postId = null) {
+            try {
+                if (isEditing && postId) {
+                    await updateDoc(doc(db, 'blog', postId), postData);
+                } else {
+                    await addDoc(collection(db, 'blog'), postData);
+                }
+            } catch (error) {
+                console.error('Error saving blog post:', error);
+                throw error;
+            }
+        }
+
+        async function deleteBlogPostFromFirebase(postId) {
+            try {
+                const postDoc = doc(db, 'blog', postId);
+                const postData = await getDoc(postDoc);
+                
+                if (postData.exists()) {
+                    const data = postData.data();
+                    // Delete associated images and videos
+                    if (data.image) await deleteImageFromStorage(data.image);
+                    if (data.video) await deleteImageFromStorage(data.video);
+                    if (data.gallery) {
+                        for (const img of data.gallery) {
+                            await deleteImageFromStorage(img);
+                        }
+                    }
+                    if (data.videos) {
+                        for (const video of data.videos) {
+                            await deleteImageFromStorage(video);
+                        }
+                    }
+                }
+                
+                await deleteDoc(postDoc);
+            } catch (error) {
+                console.error('Error deleting blog post:', error);
+                throw error;
+            }
+        }
+
+        // Blog management functions
+        function editBlogPost(postId) {
+            const post = blogPosts.find(p => p.id === postId);
+            if (!post) return;
+            
+            // Fill form with existing data
+            document.getElementById('blogTitle').value = post.title;
+            document.getElementById('blogType').value = post.type;
+            document.getElementById('blogContent').value = post.content;
+            
+            // Show existing media previews
+            if (post.image) {
+                document.getElementById('blogImagePreviewImg').src = post.image;
+                document.getElementById('blogImagePreview').classList.remove('hidden');
+            }
+            
+            if (post.video) {
+                document.getElementById('blogVideoPreviewVid').src = post.video;
+                document.getElementById('blogVideoPreview').classList.remove('hidden');
+            }
+            
+            if (post.gallery && post.gallery.length > 0) {
+                const preview = document.getElementById('galleryPreview');
+                preview.innerHTML = post.gallery.map(img => `
+                    <img src="${img}" alt="Galería" class="w-full h-24 object-cover rounded-lg">
+                `).join('');
+                preview.classList.remove('hidden');
+            }
+            
+            if (post.videos && post.videos.length > 0) {
+                const preview = document.getElementById('videosPreview');
+                preview.innerHTML = post.videos.map(video => `
+                    <video src="${video}" controls class="w-full h-32 rounded-lg"></video>
+                `).join('');
+                preview.classList.remove('hidden');
+            }
+            
+            // Change form title and button
+            document.querySelector('#addBlogModal h3').textContent = '✏️ Editar Post';
+            document.querySelector('#addBlogForm button[type="submit"]').textContent = 'Actualizar Post ✨';
+            
+            // Store editing post ID
+            document.getElementById('addBlogForm').dataset.editingId = postId;
+            
+            document.getElementById('addBlogModal').style.display = 'block';
+        }
+
+        function deleteBlogPost(postId) {
+            const post = blogPosts.find(p => p.id === postId);
+            if (!post) return;
+            
+            showConfirmModal(
+                '🗑️ Eliminar Post',
+                `¿Estás seguro de que quieres eliminar "${post.title}"? Esta acción no se puede deshacer.`,
+                async function() {
+                    try {
+                        await deleteBlogPostFromFirebase(postId);
+                        alert('✅ Post eliminado correctamente');
+                    } catch (error) {
+                        console.error('Error deleting blog post:', error);
+                        alert('❌ Error al eliminar el post');
+                    }
+                }
+            );
+        }
+
+        // Category management functions
+        function loadAdminCategories() {
+            const list = document.getElementById('adminCategoriesList');
+            
+            list.innerHTML = categories.map(category => `
+                <div class="bg-gray-700 p-4 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl">${category.emoji}</div>
+                        <div>
+                            <h4 class="font-semibold">${category.name}</h4>
+                            <p class="text-gray-300 text-sm">Clave: ${category.key}</p>
+                            <p class="text-gray-400 text-xs">${category.description}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editCategory('${category.key}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">✏️ Editar</button>
+                        <button onclick="deleteCategory('${category.key}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddCategory() {
+            document.getElementById('addCategoryModal').style.display = 'block';
+        }
+
+        function closeAddCategory() {
+            document.getElementById('addCategoryModal').style.display = 'none';
+            document.getElementById('addCategoryForm').reset();
+            
+            // Reset form to add mode
+            delete document.getElementById('addCategoryForm').dataset.editingKey;
+            document.querySelector('#addCategoryModal h3').textContent = '📂 Agregar Categoría';
+            document.querySelector('#addCategoryForm button[type="submit"]').textContent = 'Agregar Categoría ✨';
+        }
+
+        function editCategory(categoryKey) {
+            const category = categories.find(c => c.key === categoryKey);
+            if (!category) return;
+            
+            // Fill form with existing data
+            document.getElementById('categoryName').value = category.name;
+            document.getElementById('categoryKey').value = category.key;
+            document.getElementById('categoryEmoji').value = category.emoji;
+            document.getElementById('categoryDescription').value = category.description;
+            
+            // Change form title and button
+            document.querySelector('#addCategoryModal h3').textContent = '✏️ Editar Categoría';
+            document.querySelector('#addCategoryForm button[type="submit"]').textContent = 'Actualizar Categoría ✨';
+            
+            // Store editing category key
+            document.getElementById('addCategoryForm').dataset.editingKey = categoryKey;
+            
+            document.getElementById('addCategoryModal').style.display = 'block';
+        }
+
+        // Firebase CRUD operations for categories
+        async function saveCategoryToFirebase(categoryData, isEditing = false, categoryId = null) {
+            try {
+                if (isEditing && categoryId) {
+                    await updateDoc(doc(db, 'categories', categoryId), categoryData);
+                } else {
+                    await addDoc(collection(db, 'categories'), categoryData);
+                }
+            } catch (error) {
+                console.error('Error saving category:', error);
+                throw error;
+            }
+        }
+
+        async function deleteCategoryFromFirebase(categoryId) {
+            try {
+                await deleteDoc(doc(db, 'categories', categoryId));
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                throw error;
+            }
+        }
+
+        function deleteCategory(categoryKey) {
+            const category = categories.find(c => c.key === categoryKey);
+            if (!category) return;
+            
+            // Check if category has products
+            const hasProducts = products.some(p => p.category === categoryKey);
+            if (hasProducts) {
+                showConfirmModal(
+                    '⚠️ Categoría en Uso',
+                    `No puedes eliminar "${category.name}" porque tiene productos asociados. Primero elimina o cambia la categoría de los productos.`,
+                    function() {
+                        // Just close the modal, no action needed
+                    }
+                );
+                return;
+            }
+            
+            showConfirmModal(
+                '🗑️ Eliminar Categoría',
+                `¿Estás seguro de que quieres eliminar "${category.name}"? Esta acción no se puede deshacer.`,
+                async function() {
+                    try {
+                        await deleteCategoryFromFirebase(category.id);
+                        alert('✅ Categoría eliminada correctamente');
+                    } catch (error) {
+                        console.error('Error deleting category:', error);
+                        alert('❌ Error al eliminar la categoría');
+                    }
+                }
+            );
+        }
+
+        function updateCategorySelectors() {
+            // Update product form category selector
+            const productCategorySelect = document.getElementById('productCategory');
+            if (productCategorySelect) {
+                const currentValue = productCategorySelect.value;
+                productCategorySelect.innerHTML = '<option value="">Seleccionar categoría</option>';
+                categories.forEach(category => {
+                    productCategorySelect.innerHTML += `<option value="${category.key}">${category.name}</option>`;
+                });
+                productCategorySelect.value = currentValue;
+            }
+            
+            // Update catalog filter
+            const categoryFilter = document.getElementById('categoryFilter');
+            if (categoryFilter) {
+                const currentValue = categoryFilter.value;
+                categoryFilter.innerHTML = '<option value="">Todas las categorías</option>';
+                categories.forEach(category => {
+                    categoryFilter.innerHTML += `<option value="${category.key}">${category.name}</option>`;
+                });
+                categoryFilter.value = currentValue;
+            }
+        }
+
+        function downloadCustomersData() {
+            if (customers.length === 0) {
+                alert('No hay datos de clientes para descargar');
+                return;
+            }
+            
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Nombre,Dirección,Barrio,Teléfono,Email,Método de Pago,Total,Fecha\n"
+                + customers.map(customer => 
+                    `"${customer.name}","${customer.address}","${customer.neighborhood}","${customer.phone}","${customer.email}","${customer.paymentMethod}","$${customer.total.toLocaleString('es-CO')}","${customer.date}"`
+                ).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `clientes_lamorena_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function refreshCurrentSection() {
+            if (currentSection === 'catalog') {
+                loadProducts();
+            } else if (currentSection === 'premium') {
+                loadPremiumProducts();
+            } else if (currentSection === 'zona-rosa') {
+                loadZonaRosaProducts();
+            }
+        }
+
+        // Función para navegar a una categoría específica
+        function goToCategory(category) {
+            // Cambiar a la sección del catálogo
+            showSection('catalog');
+            
+            // Seleccionar la categoría en el filtro
+            document.getElementById('categoryFilter').value = category;
+            
+            // Filtrar los productos
+            filterProducts();
+            
+            // Scroll suave hacia el catálogo
+            document.getElementById('catalogSection').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+            
+            // Efecto visual para mostrar que se filtró
+            const grid = document.getElementById('productsGrid');
+            grid.style.opacity = '0.5';
+            setTimeout(() => {
+                grid.style.opacity = '1';
+                grid.style.transition = 'opacity 0.5s ease';
+            }, 200);
+        }
+
+        // Emoji picker
+        function showEmojiPicker(targetInputId) {
+            const picker = document.getElementById('emojiPicker');
+            const emojis = ['😊', '🔥', '💨', '🌿', '📜', '⚙️', '💎', '🌸', '🎯', '✨', '🚀', '💜', '🖤', '💚', '🤍', '💖', '🔮', '🌟', '⭐', '💫'];
+            
+            picker.innerHTML = emojis.map(emoji => 
+                `<button type="button" onclick="selectEmoji('${emoji}', '${targetInputId}')" class="p-2 hover:bg-gray-100 rounded">${emoji}</button>`
+            ).join('');
+            
+            picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function selectEmoji(emoji, targetInputId) {
+            document.getElementById(targetInputId).value = emoji;
+            document.getElementById('emojiPicker').style.display = 'none';
+        }
+
+        // Logo management
+        function openLogoModal() {
+            document.getElementById('logoModal').style.display = 'block';
+        }
+
+        function closeLogoModal() {
+            document.getElementById('logoModal').style.display = 'none';
+        }
+
+        document.getElementById('logoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const logoFile = document.getElementById('logoFile').files[0];
+            const position = document.querySelector('input[name="logoPosition"]:checked').value;
+            
+            if (logoFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const logoUrl = e.target.result;
+                    
+                    if (position === 'header') {
+                        document.getElementById('logoContainer').innerHTML = `<img src="${logoUrl}" alt="LA MORENA SMOKESHOP" class="w-full h-full object-contain rounded-full">`;
+                    } else {
+                        document.body.style.backgroundImage = `url(${logoUrl})`;
+                        document.body.style.backgroundSize = 'cover';
+                        document.body.style.backgroundPosition = 'center';
+                        document.body.style.backgroundAttachment = 'fixed';
+                        document.body.style.backgroundRepeat = 'no-repeat';
+                    }
+                    
+                    closeLogoModal();
+                };
+                reader.readAsDataURL(logoFile);
+            }
+        });
+
+        // Payment Methods Management
+        function loadPaymentMethods() {
+            const select = document.getElementById('paymentMethod');
+            if (select) {
+                select.innerHTML = '<option value="">Seleccionar método de pago</option>';
+                paymentMethods.filter(method => method.active).forEach(method => {
+                    select.innerHTML += `<option value="${method.name.toLowerCase()}">${method.emoji} ${method.name}</option>`;
+                });
+            }
+        }
+
+        function loadAdminPayments() {
+            const list = document.getElementById('adminPaymentsList');
+            
+            list.innerHTML = paymentMethods.map(method => `
+                <div class="bg-gray-700 p-4 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl">${method.emoji}</div>
+                        <div>
+                            <h4 class="font-semibold">${method.name}</h4>
+                            <p class="text-gray-300 text-sm">${method.description}</p>
+                            ${method.account ? `<p class="text-gray-400 text-xs">${method.account}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="togglePaymentMethod(${method.id})" class="px-3 py-1 ${method.active ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'} rounded text-sm">
+                            ${method.active ? '👁️ Desactivar' : '👁️‍🗨️ Activar'}
+                        </button>
+                        <button onclick="editPaymentMethod(${method.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">✏️ Editar</button>
+                        <button onclick="deletePaymentMethod(${method.id})" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddPaymentMethod() {
+            document.getElementById('addPaymentModal').style.display = 'block';
+        }
+
+        function closeAddPayment() {
+            document.getElementById('addPaymentModal').style.display = 'none';
+            document.getElementById('addPaymentForm').reset();
+            
+            // Reset form to add mode
+            delete document.getElementById('addPaymentForm').dataset.editingId;
+            document.querySelector('#addPaymentModal h3').textContent = '💳 Agregar Método de Pago';
+            document.querySelector('#addPaymentForm button[type="submit"]').textContent = 'Agregar Método ✨';
+        }
+
+        async function togglePaymentMethod(methodId) {
+            try {
+                await togglePaymentMethodInFirebase(methodId);
+            } catch (error) {
+                console.error('Error toggling payment method:', error);
+                alert('❌ Error al cambiar el estado del método de pago');
+            }
+        }
+
+        function editPaymentMethod(methodId) {
+            const method = paymentMethods.find(m => m.id === methodId);
+            if (!method) return;
+            
+            // Fill form with existing data
+            document.getElementById('paymentName').value = method.name;
+            document.getElementById('paymentEmoji').value = method.emoji;
+            document.getElementById('paymentDescription').value = method.description;
+            document.getElementById('paymentAccount').value = method.account || '';
+            
+            // Change form title and button
+            document.querySelector('#addPaymentModal h3').textContent = '✏️ Editar Método de Pago';
+            document.querySelector('#addPaymentForm button[type="submit"]').textContent = 'Actualizar Método ✨';
+            
+            // Store editing method ID
+            document.getElementById('addPaymentForm').dataset.editingId = methodId;
+            
+            document.getElementById('addPaymentModal').style.display = 'block';
+        }
+
+        function deletePaymentMethod(methodId) {
+            const method = paymentMethods.find(m => m.id === methodId);
+            if (!method) return;
+            
+            showConfirmModal(
+                '🗑️ Eliminar Método de Pago',
+                `¿Estás seguro de que quieres eliminar "${method.name}"? Esta acción no se puede deshacer.`,
+                async function() {
+                    try {
+                        await deletePaymentMethodFromFirebase(methodId);
+                        alert('✅ Método de pago eliminado correctamente');
+                    } catch (error) {
+                        console.error('Error deleting payment method:', error);
+                        alert('❌ Error al eliminar el método de pago');
+                    }
+                }
+            );
+        }
+
+        // Firebase CRUD operations for payment methods
+        async function savePaymentMethodToFirebase(methodData, isEditing = false, methodId = null) {
+            try {
+                if (isEditing && methodId) {
+                    await updateDoc(doc(db, 'paymentMethods', methodId), methodData);
+                } else {
+                    await addDoc(collection(db, 'paymentMethods'), methodData);
+                }
+            } catch (error) {
+                console.error('Error saving payment method:', error);
+                throw error;
+            }
+        }
+
+        async function deletePaymentMethodFromFirebase(methodId) {
+            try {
+                await deleteDoc(doc(db, 'paymentMethods', methodId));
+            } catch (error) {
+                console.error('Error deleting payment method:', error);
+                throw error;
+            }
+        }
+
+        async function togglePaymentMethodInFirebase(methodId) {
+            try {
+                const method = paymentMethods.find(m => m.id === methodId);
+                if (method) {
+                    await updateDoc(doc(db, 'paymentMethods', methodId), {
+                        active: !method.active
+                    });
+                }
+            } catch (error) {
+                console.error('Error toggling payment method:', error);
+                throw error;
+            }
+        }
+
+        // Payment form submission
+        document.getElementById('addPaymentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const editingId = this.dataset.editingId;
+            const isEditing = !!editingId;
+            
+            const methodData = {
+                name: document.getElementById('paymentName').value,
+                emoji: document.getElementById('paymentEmoji').value || '💳',
+                description: document.getElementById('paymentDescription').value,
+                account: document.getElementById('paymentAccount').value,
+                active: true
+            };
+            
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('#addPaymentForm button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '⏳ Guardando...';
+                submitBtn.disabled = true;
+                
+                if (isEditing) {
+                    const existingMethod = paymentMethods.find(m => m.id === editingId);
+                    if (existingMethod) {
+                        // Keep existing active status
+                        methodData.active = existingMethod.active;
+                    }
+                    await savePaymentMethodToFirebase(methodData, true, editingId);
+                } else {
+                    await savePaymentMethodToFirebase(methodData);
+                }
+                
+                // Reset form
+                delete document.getElementById('addPaymentForm').dataset.editingId;
+                document.querySelector('#addPaymentModal h3').textContent = '💳 Agregar Método de Pago';
+                submitBtn.textContent = 'Agregar Método ✨';
+                
+                closeAddPayment();
+                alert(isEditing ? '✅ Método de pago actualizado correctamente' : '✅ Método de pago agregado correctamente');
+                
+            } catch (error) {
+                console.error('Error saving payment method:', error);
+                alert('❌ Error al guardar el método de pago. Por favor intenta nuevamente.');
+            } finally {
+                // Restore button state
+                const submitBtn = document.querySelector('#addPaymentForm button[type="submit"]');
+                submitBtn.disabled = false;
+                if (!isEditing) {
+                    submitBtn.textContent = 'Agregar Método ✨';
+                } else {
+                    submitBtn.textContent = 'Actualizar Método ✨';
+                }
+            }
+        });
+
+        // Category form submission
+        document.getElementById('addCategoryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const editingKey = this.dataset.editingKey;
+            const isEditing = !!editingKey;
+            
+            const categoryData = {
+                key: document.getElementById('categoryKey').value.toLowerCase().replace(/\s+/g, '-'),
+                name: document.getElementById('categoryName').value,
+                emoji: document.getElementById('categoryEmoji').value || '📂',
+                description: document.getElementById('categoryDescription').value
+            };
+            
+            // Check if key already exists (only for new categories or if key changed)
+            const existingCategory = categories.find(c => c.key === categoryData.key);
+            if (existingCategory && (!isEditing || editingKey !== categoryData.key)) {
+                alert('Ya existe una categoría con esa clave. Por favor usa una clave diferente.');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('#addCategoryForm button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '⏳ Guardando...';
+                submitBtn.disabled = true;
+                
+                if (isEditing) {
+                    const category = categories.find(c => c.key === editingKey);
+                    if (category) {
+                        // If key changed, update products that use this category
+                        if (editingKey !== categoryData.key) {
+                            // Update all products with the old category key
+                            const productsToUpdate = products.filter(p => p.category === editingKey);
+                            for (const product of productsToUpdate) {
+                                await updateDoc(doc(db, 'products', product.id), {
+                                    category: categoryData.key
+                                });
+                            }
+                        }
+                        await saveCategoryToFirebase(categoryData, true, category.id);
+                    }
+                } else {
+                    await saveCategoryToFirebase(categoryData);
+                }
+                
+                // Reset form
+                delete document.getElementById('addCategoryForm').dataset.editingKey;
+                document.querySelector('#addCategoryModal h3').textContent = '📂 Agregar Categoría';
+                submitBtn.textContent = 'Agregar Categoría ✨';
+                
+                closeAddCategory();
+                alert(isEditing ? '✅ Categoría actualizada correctamente' : '✅ Categoría agregada correctamente');
+                
+            } catch (error) {
+                console.error('Error saving category:', error);
+                alert('❌ Error al guardar la categoría. Por favor intenta nuevamente.');
+            } finally {
+                // Restore button state
+                const submitBtn = document.querySelector('#addCategoryForm button[type="submit"]');
+                submitBtn.disabled = false;
+                if (!isEditing) {
+                    submitBtn.textContent = 'Agregar Categoría ✨';
+                } else {
+                    submitBtn.textContent = 'Actualizar Categoría ✨';
+                }
+            }
+        });
+
+        // Logo and Settings Management
+        function loadAdminSettings() {
+            // This function can be used to load saved settings if needed
+        }
+
+        async function uploadHeaderLogo() {
+            const logoFile = document.getElementById('headerLogoFile').files[0];
+            
+            if (!logoFile) {
+                alert('Por favor selecciona un archivo de imagen');
+                return;
+            }
+            
+            try {
+                // Upload to Firebase Storage
+                const logoPath = `settings/header_logo_${Date.now()}_${logoFile.name}`;
+                const logoUrl = await uploadImageToStorage(logoFile, logoPath);
+                
+                // Update settings in Firebase
+                await updateDoc(doc(db, 'settings', 'general'), {
+                    headerLogo: logoUrl
+                });
+                
+                // Show preview
+                document.getElementById('headerLogoImg').src = logoUrl;
+                document.getElementById('headerLogoPreview').classList.remove('hidden');
+                
+                alert('Logo del header actualizado correctamente ✅');
+            } catch (error) {
+                console.error('Error uploading header logo:', error);
+                alert('❌ Error al subir el logo del header');
+            }
+        }
+
+        async function uploadBackgroundLogo() {
+            const logoFile = document.getElementById('backgroundLogoFile').files[0];
+            const opacity = document.getElementById('backgroundOpacity').value;
+            
+            if (!logoFile) {
+                alert('Por favor selecciona un archivo de imagen');
+                return;
+            }
+            
+            try {
+                // Upload to Firebase Storage
+                const logoPath = `settings/background_logo_${Date.now()}_${logoFile.name}`;
+                const logoUrl = await uploadImageToStorage(logoFile, logoPath);
+                
+                // Update settings in Firebase
+                await updateDoc(doc(db, 'settings', 'general'), {
+                    backgroundLogo: logoUrl,
+                    backgroundOpacity: opacity
+                });
+                
+                alert('Logo de fondo aplicado correctamente ✅');
+            } catch (error) {
+                console.error('Error uploading background logo:', error);
+                alert('❌ Error al subir el logo de fondo');
+            }
+        }
+
+        async function removeBackgroundLogo() {
+            try {
+                // Remove from Firebase settings
+                await updateDoc(doc(db, 'settings', 'general'), {
+                    backgroundLogo: null,
+                    backgroundOpacity: '0.3'
+                });
+                
+                alert('Logo de fondo removido ✅');
+            } catch (error) {
+                console.error('Error removing background logo:', error);
+                alert('❌ Error al remover el logo de fondo');
+            }
+        }
+
+        async function saveContactInfo() {
+            const whatsapp = document.getElementById('whatsappNumber').value;
+            const email = document.getElementById('businessEmail').value;
+            const address = document.getElementById('businessAddress').value;
+            
+            try {
+                // Update settings in Firebase
+                await updateDoc(doc(db, 'settings', 'general'), {
+                    whatsappNumber: whatsapp,
+                    businessEmail: email,
+                    businessAddress: address
+                });
+                
+                alert('Información de contacto guardada correctamente ✅');
+            } catch (error) {
+                console.error('Error saving contact info:', error);
+                alert('❌ Error al guardar la información de contacto');
+            }
+        }
+
+        // Update sendToWhatsApp function to use dynamic number
+        function sendToWhatsApp() {
+            const form = document.getElementById('checkoutForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const whatsappNumber = window.currentWhatsAppNumber || '573150646191';
+
+            const customerData = {
+                name: document.getElementById('customerName').value,
+                address: document.getElementById('customerAddress').value,
+                neighborhood: document.getElementById('customerNeighborhood').value,
+                phone: document.getElementById('customerPhone').value,
+                email: document.getElementById('customerEmail').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                items: cart,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                date: new Date().toLocaleString()
+            };
+
+            // Guardar cliente en base de datos
+            customers.push(customerData);
+
+            // Crear mensaje para WhatsApp
+            let message = `🛒 *NUEVO PEDIDO - LA MORENA SMOKESHOP*\n\n`;
+            message += `👤 *Cliente:* ${customerData.name}\n`;
+            message += `📍 *Dirección:* ${customerData.address}, ${customerData.neighborhood}\n`;
+            message += `📱 *Teléfono:* ${customerData.phone}\n`;
+            message += `📧 *Email:* ${customerData.email}\n`;
+            message += `💳 *Método de pago:* ${customerData.paymentMethod}\n\n`;
+            message += `🛍️ *PRODUCTOS:*\n`;
+            
+            cart.forEach(item => {
+                message += `• ${item.name} x${item.quantity} - $${(item.price * item.quantity).toLocaleString('es-CO')}\n`;
+            });
+            
+            message += `\n💰 *TOTAL: $${customerData.total.toLocaleString('es-CO')}*\n\n`;
+            message += `📅 *Fecha:* ${customerData.date}`;
+
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+
+            // Limpiar carrito y cerrar modal
+            cart = [];
+            updateCartCount();
+            closeCheckout();
+            alert('¡Pedido enviado! Te contactaremos pronto 😊');
+        }
+
+        // Update shareProduct function to use dynamic number
+        function shareProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const whatsappNumber = window.currentWhatsAppNumber || '573150646191';
+
+            const message = `🛍️ *${product.name}* - LA MORENA SMOKESHOP\n\n` +
+                          `💰 Precio: $${product.price.toLocaleString('es-CO')}\n` +
+                          `📝 ${product.description.substring(0, 200)}${product.description.length > 200 ? '...' : ''}\n\n` +
+                          `¡Pregunta por este producto! 💜`;
+
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+            
+            // Mostrar confirmación visual
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '✅ Compartido';
+            button.style.background = '#10b981';
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.background = '';
+            }, 2000);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+
     <script>
         // Variables globales
         let cart = [];
